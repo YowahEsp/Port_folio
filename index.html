@@ -180,9 +180,35 @@
         .loading, .error, .no-news { padding: 20px; text-align: center; }
         .fa-spinner { animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- CORAZÓN ANIMADO --- */
+        .footer-heart {
+            text-align: center;
+            margin: 30px 0 10px;
+            font-size: 1.1em;
+            color: var(--secondary-text);
+        }
+
+        .heart {
+            display: inline-block;
+            position: relative;
+            color: #ff4757;
+            font-size: 1.4em;
+            animation: heartbeat 1.2s infinite;
+            transform-origin: center;
+        }
+
+        @keyframes heartbeat {
+            0%   { transform: scale(1); }
+            14%  { transform: scale(1.3); }
+            28%  { transform: scale(1); }
+            42%  { transform: scale(1.3); }
+            70%  { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
+    
     <header>
         <div class="header-content">
             <div class="logo"><i class="fas fa-chart-line"></i> Portfolio Tracker</div>
@@ -196,10 +222,12 @@
                 <h3>VALOR TOTAL</h3>
                 <div class="summary-value" id="total-value">$---</div>
             </div>
+            
             <div class="summary-card">
                 <h3>GANANCIAS DEL DÍA</h3>
                 <div class="summary-value" id="day-gain">+$---</div>
             </div>
+            
             <div class="summary-card">
                 <h3>CAMBIOS POSITIVOS</h3>
                 <div class="summary-value" id="positive-changes">--/--</div>
@@ -210,6 +238,11 @@
 
         <button class="refresh-btn" onclick="loadPrices()"><i class="fas fa-sync-alt"></i> Actualizar ahora</button>
         <div class="last-updated">Los datos se actualizan automáticamente cada minuto</div>
+
+        <!-- CORAZÓN Y FRASE FINAL -->
+        <div class="footer-heart">
+            DESARROLLADO CON <span class="heart"><i class="fas fa-heart"></i></span> PARA INVERSORES.
+        </div>
     </div>
 
     <script>
@@ -226,7 +259,7 @@
             { symbol: 'BLK', name: 'BlackRock', type: 'stock', shares: 7 },
             { symbol: 'WMT', name: 'Walmart', type: 'stock', shares: 15 },
             { symbol: 'BOIL', name: 'ProShares Ultra Bloomberg Natural Gas', type: 'stock', shares: 50 },
-            { symbol: 'SOL', name: 'Solana', type: 'crypto', market: 'USD', shares: 20 }
+            { symbol: 'solana', name: 'Solana', type: 'crypto', market: 'usd', shares: 20 } // Cambiado a minúsculas para CoinGecko
         ];
 
         let portfolioData = {};
@@ -354,24 +387,21 @@
             }
         }
 
+        // Reemplazada la función fetchCryptoPrice para usar CoinGecko API (como en PARA SOLANA.html)
         async function fetchCryptoPrice(symbol, market) {
-            const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${symbol}&to_currency=${market}&apikey=${API_KEY_ALPHA}`;
             try {
+                const url = `https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=${market}&include_24hr_change=true`;
                 const res = await fetch(url);
                 const data = await res.json();
-                const rate = data['Realtime Currency Exchange Rate'];
-                if (rate && rate['5. Exchange Rate']) {
-                     // Alpha Vantage no proporciona el cambio diario para cripto, lo simulamos o dejamos en 0.
-                     // Para una solución real, se necesitaría otra llamada para el precio de cierre anterior.
-                    updatePrice(
-                        symbol,
-                        parseFloat(rate['5. Exchange Rate']),
-                        0, // Cambio no disponible en este endpoint
-                        0  // Porcentaje de cambio no disponible
-                    );
+                
+                if (data[symbol]) {
+                    const price = data[symbol][market];
+                    const change24h = data[symbol][`${market}_24h_change`] || 0;
+                    const changeAmount = (price * change24h) / 100;
+
+                    updatePrice(symbol, price, changeAmount, change24h);
                 } else {
-                    console.error('Datos no válidos para crypto:', symbol, data);
-                     document.getElementById(`price-${symbol}`).textContent = 'Error';
+                    throw new Error('No data');
                 }
             } catch (error) {
                 console.error('Error fetching crypto price for', symbol, error);
@@ -381,26 +411,27 @@
 
         // --- ACTUALIZACIÓN EN TIEMPO REAL MEJORADA (WebSocket para SOL) ---
 
+        // Reemplazada la función setupRealtimeUpdates para que coincida con PARA SOLANA.html
         async function setupRealtimeUpdates() {
-            // Conectamos al stream de Binance para SOL/USDT. Nota: AlphaVantage usa USD, esto es un ejemplo.
-            const ws = new WebSocket('wss://stream.binance.com:9443/ws/solusdt@trade');
+            try {
+                const ws = new WebSocket('wss://stream.binance.com:9443/ws/solusdt@ticker');
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const newPrice = parseFloat(data.p);
-                
-                // Obtenemos el precio anterior para calcular el cambio
-                const previousPrice = portfolioData['SOL'] ? portfolioData['SOL'].price : newPrice;
-                const change = newPrice - previousPrice;
-                const changePercent = (change / previousPrice) * 100;
-                
-                console.log(`WebSocket Update for SOL: $${newPrice.toFixed(2)}`);
-                updatePrice('SOL', newPrice, change, changePercent);
-                updateSummary(); // Re-calcular el resumen con el nuevo precio
-            };
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    const newPrice = parseFloat(data.c);
+                    const changePercent = parseFloat(data.P);
+                    const changeAmount = (newPrice * changePercent) / 100;
+                    
+                    console.log(`WebSocket Update for SOL: $${newPrice.toFixed(2)}`);
+                    updatePrice('solana', newPrice, changeAmount, changePercent);
+                    updateSummary();
+                };
 
-            ws.onerror = (error) => {
-                console.error('WebSocket Error:', error);
+                ws.onerror = (error) => {
+                    console.error('WebSocket Error:', error);
+                }
+            } catch (error) {
+                console.error('WebSocket setup failed:', error);
             }
         }
 
