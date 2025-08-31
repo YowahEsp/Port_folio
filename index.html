@@ -1,254 +1,458 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <title>Portfolio Real-Time (Alpha Vantage)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root{
-      --primary:#1976d2;
-      --secondary:#42a5f5;
-      --accent:#26a69a;
-      --up:#00c853;
-      --down:#ff5252;
-      /* colores claros */
-      --bg:#ffffff;
-      --card:#ffffff;
-      --text:#212121;
-      --text-light:#757575;
-      --border:#e0e0e0;
-      --shadow:0 4px 20px rgba(0,0,0,.08);
-      --radius:12px;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{
-      font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
-      background:var(--bg);
-      color:var(--text);
-      line-height:1.6;
-      padding-bottom:2rem;
-    }
-    header{
-      background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);
-      color:#fff;
-      padding:1.5rem;
-      text-align:center;
-      box-shadow:0 2px 10px rgba(0,0,0,.1);
-      margin-bottom:2rem;
-    }
-    .header-content{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
-    .logo{font-size:1.8rem;font-weight:700;display:flex;align-items:center}
-    .logo i{margin-right:.5rem;color:#fff}
-    .last-update{font-size:.9rem;opacity:.9}
-    .container{max-width:1200px;margin:0 auto;padding:0 1rem}
-    .summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem;margin-bottom:2rem}
-    .summary-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center;box-shadow:var(--shadow)}
-    .summary-card h3{font-size:1rem;margin-bottom:.8rem;color:var(--text-light)}
-    .summary-value{font-size:1.8rem;font-weight:700}
-    .summary-positive{color:var(--up)}
-    .summary-negative{color:var(--down)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow);transition:transform .3s ease,box-shadow .3s ease;position:relative;overflow:hidden}
-    .card:hover{transform:translateY(-5px);box-shadow:0 8px 25px rgba(0,0,0,.1)}
-    .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
-    .symbol{font-size:1.1rem;font-weight:700;color:var(--primary)}
-    .name{font-size:.9rem;color:var(--text-light);margin-top:.2rem}
-    .logo-placeholder{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--secondary) 0%,var(--accent) 100%);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold}
-    .price-data{margin:1.2rem 0}
-    .price{font-size:1.8rem;font-weight:800;margin:.3rem 0}
-    .change{display:inline-flex;align-items:center;padding:.3rem .8rem;border-radius:20px;font-size:.9rem;font-weight:600}
-    .up{background-color:rgba(0,200,83,.1);color:var(--up)}
-    .down{background-color:rgba(255,82,82,.1);color:var(--down)}
-    .change i{margin-right:.3rem;font-size:.8rem}
-    .card-footer{border-top:1px solid var(--border);padding-top:1rem;margin-top:.5rem}
-    .toggle{background:none;border:none;color:var(--secondary);cursor:pointer;font-size:.95rem;font-weight:600;display:flex;align-items:center;padding:.5rem 0;transition:color .2s}
-    .toggle:hover{color:var(--primary)}
-    .toggle i{margin-right:.5rem;transition:transform .3s}
-    .toggle.open i{transform:rotate(180deg)}
-    .news{margin-top:1rem;max-height:0;overflow:hidden;transition:max-height .5s ease}
-    .news.open{max-height:500px;overflow-y:auto}
-    .news article{padding:.8rem 0;border-bottom:1px solid var(--border)}
-    .news article:last-child{border-bottom:none}
-    .news a{color:var(--text);text-decoration:none;font-weight:500;display:block;transition:color .2s}
-    .news a:hover{color:var(--secondary)}
-    .news time{font-size:.8rem;color:var(--text-light);display:block;margin-top:.3rem}
-    .loading{text-align:center;padding:1rem;color:var(--text-light)}
-    .loading i{animation:spin 1s infinite linear;margin-right:.5rem}
-    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-    .last-updated{text-align:center;margin:1.5rem 0;color:var(--text-light);font-size:.9rem}
-    .refresh-btn{display:block;margin:1.5rem auto;padding:.8rem 1.5rem;background:linear-gradient(135deg,var(--secondary) 0%,var(--accent) 100%);color:#fff;border:none;border-radius:30px;font-weight:600;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 15px rgba(52,152,219,.3)}
-    .refresh-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(52,152,219,.4)}
-    .refresh-btn:active{transform:translateY(0)}
-    .refresh-btn i{margin-right:.5rem}
-    @media (max-width:768px){
-      .grid{grid-template-columns:1fr}
-      .summary-cards{grid-template-columns:1fr 1fr}
-      .header-content{flex-direction:column;gap:.5rem}
-    }
-    @media (max-width:480px){.summary-cards{grid-template-columns:1fr}}
-  </style>
-</head>
+    <meta charset="UTF-8"/>
+    <title>Portfolio Real-Time (Alpha Vantage)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
 
-<body>
-<header>
-  <div class="header-content">
-    <div class="logo"><i class="fas fa-chart-line"></i>Portfolio Tracker</div>
-    <div class="last-update"><i class="fas fa-sync-alt"></i> Actualizado: <span id="update-time">--:--:--</span></div>
-  </div>
-</header>
-
-<div class="container">
-  <div class="summary-cards">
-    <div class="summary-card">
-      <h3>VALOR TOTAL</h3>
-      <div class="summary-value">$---</div>
-    </div>
-    <div class="summary-card">
-      <h3>GANANCIAS DEL DÍA</h3>
-      <div class="summary-value summary-positive">+$---</div>
-    </div>
-    <div class="summary-card">
-      <h3>CAMBIOS POSITIVOS</h3>
-      <div class="summary-value">--/--</div>
-    </div>
-  </div>
-
-  <div class="grid" id="grid"></div>
-
-  <button class="refresh-btn" onclick="loadPrices()"><i class="fas fa-sync-alt"></i> Actualizar ahora</button>
-  <div class="last-updated">Los datos se actualizan automáticamente cada 30 segundos</div>
-</div>
-
-<script>
-  const API_KEY_ALPHA = '1SCSRNEAW6YWJME8';
-  const API_KEY_NEWS  = 'aaf83dcbd8694668ad89247b959db678';
-  const tickers = [
-    {symbol:'PKG',  name:'Packaging America'},
-    {symbol:'DE',   name:'Deere & Company'},
-    {symbol:'BRK.B',name:'Berkshire Hathaway B'},
-    {symbol:'SPGI', name:'S&P Global'},
-    {symbol:'BLK',  name:'BlackRock'},
-    {symbol:'WMT',  name:'Walmart'},
-    {symbol:'SOL',  name:'Solana'},
-    {symbol:'NG',   name:'Natural Gas'}
-  ];
-
-  const grid = document.getElementById('grid');
-  const updateTimeEl = document.getElementById('update-time');
-
-  /* ---------- Crear tarjetas ---------- */
-  tickers.forEach(t => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.id = `card-${t.symbol}`;
-    card.innerHTML = `
-      <div class="card-header">
-        <div>
-          <div class="symbol">${t.symbol}</div>
-          <div class="name">${t.name}</div>
-        </div>
-        <div class="logo-placeholder">${t.symbol.substring(0,2)}</div>
-      </div>
-      <div class="price-data">
-        <div class="price">--</div>
-        <div class="change">--</div>
-      </div>
-      <div class="card-footer">
-        <button class="toggle" onclick="toggleNews('${t.symbol}')">
-          <i class="fas fa-chevron-down"></i> Ver noticias
-        </button>
-        <div class="news" id="news-${t.symbol}"></div>
-      </div>`;
-    grid.appendChild(card);
-  });
-
-  /* ---------- Precio en vivo ---------- */
-  async function loadPrices(){
-    const now = new Date();
-    updateTimeEl.textContent = now.toLocaleTimeString();
-    for (const t of tickers){
-      try{
-        const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${t.symbol}&apikey=${API_KEY_ALPHA}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const q = data['Global Quote'];
-        if(!q) continue;
-        const price = parseFloat(q['05. price']);
-        const change = parseFloat(q['09. change']);
-        const pct = parseFloat(q['10. change percent'].replace('%',''));
-        const card = document.getElementById(`card-${t.symbol}`);
-        card.querySelector('.price').textContent = formatCurrency(price);
-        const chgEl = card.querySelector('.change');
-        chgEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${pct.toFixed(2)}%)`;
-        chgEl.className = `change ${change >= 0 ? 'up' : 'down'}`;
-        const icon = change >= 0 ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
-        chgEl.innerHTML = icon + chgEl.innerHTML;
-      } catch(e){ console.error(e); }
-    }
-    updateSummary();
-  }
-
-  /* ---------- Noticias ---------- */
-  const newsCache = new Map();
-  async function fetchNewsForSymbol(symbol){
-    if(newsCache.has(symbol)) return newsCache.get(symbol);
-    const from = new Date(Date.now() - 14*24*60*60*1000).toISOString().split('T')[0];
-    const query = encodeURIComponent(`${symbol} stock market`);
-    const url = `https://newsapi.org/v2/everything?q=${query}&language=en&from=${from}&sortBy=publishedAt&pageSize=5&apiKey=${API_KEY_NEWS}`;
-    try{
-      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const res = await fetch(proxy);
-      const raw = await res.json();
-      const data = JSON.parse(raw.contents);
-      const articles = (data.articles || []).slice(0,5);
-      newsCache.set(symbol, articles);
-      return articles;
-    }catch(err){
-      console.error('News fetch error for', symbol, err);
-      return [];
-    }
-  }
-
-  async function toggleNews(symbol){
-    const news = document.getElementById(`news-${symbol}`);
-    const btn = news.previousElementSibling;
-    if(news.classList.toggle('open')){
-      btn.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar noticias';
-      btn.classList.add('open');
-      if(!news.innerHTML || news.innerHTML === '<div class="loading"><i class="fas fa-spinner"></i> Cargando...</div>'){
-        news.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Cargando...</div>';
-        const articles = await fetchNewsForSymbol(symbol);
-        let html = '';
-        if(articles.length > 0){
-          articles.forEach(a => {
-            const date = new Date(a.publishedAt).toLocaleDateString();
-            html += `<article><a href="${a.url}" target="_blank">${a.title}</a><time>${date}</time></article>`;
-          });
-        }else{
-          html = '<div class="loading">No hay noticias disponibles</div>';
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --primary-text: #e0e0e0;
+            --secondary-text: #a0a0a0;
+            --positive-color: #2ecc71;
+            --negative-color: #e74c3c;
+            --accent-color: #0f3460;
+            --border-color: #5372f0;
         }
-        news.innerHTML = html;
-      }
-    }else{
-      btn.innerHTML = '<i class="fas fa-chevron-down"></i> Ver noticias';
-      btn.classList.remove('open');
-    }
-  }
 
-  /* ---------- Util ---------- */
-  function formatCurrency(value){
-    return '$' + value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-  }
-  function updateSummary(){
-    document.querySelectorAll('.summary-value')[0].textContent = '$15,426.83';
-    document.querySelectorAll('.summary-value')[1].textContent = '+$326.48';
-    document.querySelectorAll('.summary-value')[2].textContent = '5/8';
-  }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-text);
+            margin: 0;
+            padding: 20px;
+        }
 
-  /* ---------- Arranque ---------- */
-  loadPrices();
-  setInterval(loadPrices, 30000);
-</script>
+        header {
+            background-color: var(--card-bg);
+            padding: 15px 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--border-color);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .last-update {
+            font-size: 0.9em;
+            color: var(--secondary-text);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            margin: 0 0 10px;
+            font-size: 0.9em;
+            color: var(--secondary-text);
+            text-transform: uppercase;
+        }
+
+        .summary-value {
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        .summary-positive { color: var(--positive-color); }
+        .summary-negative { color: var(--negative-color); }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid var(--accent-color);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .ticker-name { font-size: 1.5em; font-weight: 700; }
+        .ticker-symbol { font-size: 0.9em; color: var(--secondary-text); }
+
+        .price { font-size: 2.2em; font-weight: 700; margin-bottom: 10px; }
+        
+        .change { font-size: 1.2em; }
+        .change.positive { color: var(--positive-color); }
+        .change.negative { color: var(--negative-color); }
+
+        .refresh-btn {
+            display: block;
+            margin: 30px auto;
+            padding: 12px 25px;
+            background-color: var(--border-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+        
+        .refresh-btn:hover { background-color: #3a5fcd; }
+        .refresh-btn .fa-sync-alt { margin-right: 8px; }
+
+        .last-updated { text-align: center; color: var(--secondary-text); font-size: 0.9em; }
+
+        /* Estilos para noticias */
+        .news-toggle-btn {
+            background: var(--accent-color);
+            color: var(--primary-text);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            text-align: left;
+        }
+        
+        .news-toggle-btn.open {
+            background-color: var(--border-color);
+        }
+
+        .news-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+            margin-top: 10px;
+        }
+
+        .news-container.open {
+            max-height: 500px; /* Altura máxima para mostrar noticias */
+             overflow-y: auto;
+        }
+
+        .news-container article {
+            border-top: 1px solid var(--accent-color);
+            padding: 10px 0;
+        }
+
+        .news-container h3 { font-size: 1em; margin: 0 0 5px; }
+        .news-container p { font-size: 0.9em; margin: 0 0 5px; color: var(--secondary-text); }
+        .news-container small { font-size: 0.8em; color: var(--border-color); }
+        
+        .loading, .error, .no-news { padding: 20px; text-align: center; }
+        .fa-spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo"><i class="fas fa-chart-line"></i> Portfolio Tracker</div>
+            <div class="last-update"><i class="fas fa-sync-alt"></i> Actualizado: <span id="update-time">--:--:--</span></div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="summary-cards">
+            <div class="summary-card">
+                <h3>VALOR TOTAL</h3>
+                <div class="summary-value" id="total-value">$---</div>
+            </div>
+            <div class="summary-card">
+                <h3>GANANCIAS DEL DÍA</h3>
+                <div class="summary-value" id="day-gain">+$---</div>
+            </div>
+            <div class="summary-card">
+                <h3>CAMBIOS POSITIVOS</h3>
+                <div class="summary-value" id="positive-changes">--/--</div>
+            </div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <button class="refresh-btn" onclick="loadPrices()"><i class="fas fa-sync-alt"></i> Actualizar ahora</button>
+        <div class="last-updated">Los datos se actualizan automáticamente cada minuto</div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const API_KEY_ALPHA = '1SCSRNEAW6YWJME8'; // Tu clave API de Alpha Vantage
+        // NOTA: La clave de News API no se usa en esta versión, ya que usamos NEWS_SENTIMENT de Alpha Vantage
+        // const API_KEY_NEWS = 'aaf83dcbd8694668ad89247b959db678';
+
+        const tickers = [
+            { symbol: 'PKG', name: 'Packaging America', type: 'stock', shares: 10 },
+            { symbol: 'DE', name: 'Deere & Company', type: 'stock', shares: 5 },
+            { symbol: 'BRK.B', name: 'Berkshire Hathaway B', type: 'stock', shares: 8 },
+            { symbol: 'SPGI', name: 'S&P Global', type: 'stock', shares: 12 },
+            { symbol: 'BLK', name: 'BlackRock', type: 'stock', shares: 7 },
+            { symbol: 'WMT', name: 'Walmart', type: 'stock', shares: 15 },
+            { symbol: 'BOIL', name: 'ProShares Ultra Bloomberg Natural Gas', type: 'stock', shares: 50 },
+            { symbol: 'SOL', name: 'Solana', type: 'crypto', market: 'USD', shares: 20 }
+        ];
+
+        let portfolioData = {};
+
+        // --- LÓGICA PRINCIPAL ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderGrid();
+            loadPrices();
+            setupRealtimeUpdates(); // Iniciar WebSocket para SOL
+            setInterval(loadPrices, 60000); // Actualización automática cada 60 segundos
+        });
+
+        function renderGrid() {
+            const grid = document.getElementById('grid');
+            let html = '';
+            for (const ticker of tickers) {
+                html += `
+                    <div class="card" id="card-${ticker.symbol}">
+                        <div class="card-header">
+                            <div>
+                                <div class="ticker-name">${ticker.name}</div>
+                                <div class="ticker-symbol">${ticker.symbol} ${ticker.type === 'crypto' ? `(${ticker.market})` : ''}</div>
+                            </div>
+                            <div class="ticker-type">${ticker.type === 'stock' ? '<i class="fas fa-building"></i>' : '<i class="fab fa-bitcoin"></i>'}</div>
+                        </div>
+                        <div class="price" id="price-${ticker.symbol}">Cargando...</div>
+                        <div class="change" id="change-${ticker.symbol}"></div>
+                        <button class="news-toggle-btn" onclick="toggleNews('${ticker.symbol}')">
+                            <i class="fas fa-chevron-down"></i> Ver noticias
+                        </button>
+                        <div class="news-container" id="news-${ticker.symbol}"></div>
+                    </div>
+                `;
+            }
+            grid.innerHTML = html;
+        }
+
+        async function loadPrices() {
+            console.log('Actualizando precios...');
+            const promises = tickers.map(ticker => {
+                if (ticker.type === 'stock') {
+                    return fetchStockPrice(ticker.symbol);
+                } else if (ticker.type === 'crypto') {
+                    return fetchCryptoPrice(ticker.symbol, ticker.market);
+                }
+            });
+
+            await Promise.all(promises);
+            updateSummary();
+            document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
+        }
+
+        function updatePrice(symbol, price, change, changePercent) {
+             const priceEl = document.getElementById(`price-${symbol}`);
+             const changeEl = document.getElementById(`change-${symbol}`);
+
+             if (!priceEl || !changeEl) return;
+
+             priceEl.textContent = `$${price.toFixed(2)}`;
+             
+             const changeClass = change >= 0 ? 'positive' : 'negative';
+             const sign = change >= 0 ? '+' : '';
+             
+             changeEl.innerHTML = `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
+             changeEl.className = `change ${changeClass}`;
+
+             // Almacenar datos para cálculos de resumen
+             const tickerConfig = tickers.find(t => t.symbol === symbol);
+             portfolioData[symbol] = {
+                 price,
+                 change,
+                 shares: tickerConfig.shares
+             };
+        }
+
+        function updateSummary() {
+            let totalValue = 0;
+            let totalDayGain = 0;
+            let positiveMovers = 0;
+            const totalAssets = Object.keys(portfolioData).length;
+
+            for (const symbol in portfolioData) {
+                const data = portfolioData[symbol];
+                totalValue += data.price * data.shares;
+                totalDayGain += data.change * data.shares;
+                if (data.change > 0) {
+                    positiveMovers++;
+                }
+            }
+            
+            document.getElementById('total-value').textContent = `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            
+            const dayGainEl = document.getElementById('day-gain');
+            const gainClass = totalDayGain >= 0 ? 'summary-positive' : 'summary-negative';
+            const sign = totalDayGain >= 0 ? '+' : '';
+            dayGainEl.textContent = `${sign}$${totalDayGain.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            dayGainEl.className = `summary-value ${gainClass}`;
+
+            document.getElementById('positive-changes').textContent = `${positiveMovers}/${totalAssets}`;
+        }
+
+        // --- OBTENCIÓN DE DATOS (APIs) ---
+
+        async function fetchStockPrice(symbol) {
+            const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEY_ALPHA}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const quote = data['Global Quote'];
+                if (quote && quote['05. price']) {
+                    updatePrice(
+                        symbol,
+                        parseFloat(quote['05. price']),
+                        parseFloat(quote['09. change']),
+                        parseFloat(quote['10. change percent'].replace('%', ''))
+                    );
+                } else {
+                    console.error('Datos no válidos para el stock:', symbol, data);
+                     document.getElementById(`price-${symbol}`).textContent = 'Error';
+                }
+            } catch (error) {
+                console.error('Error fetching stock price for', symbol, error);
+                document.getElementById(`price-${symbol}`).textContent = 'Error';
+            }
+        }
+
+        async function fetchCryptoPrice(symbol, market) {
+            const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${symbol}&to_currency=${market}&apikey=${API_KEY_ALPHA}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const rate = data['Realtime Currency Exchange Rate'];
+                if (rate && rate['5. Exchange Rate']) {
+                     // Alpha Vantage no proporciona el cambio diario para cripto, lo simulamos o dejamos en 0.
+                     // Para una solución real, se necesitaría otra llamada para el precio de cierre anterior.
+                    updatePrice(
+                        symbol,
+                        parseFloat(rate['5. Exchange Rate']),
+                        0, // Cambio no disponible en este endpoint
+                        0  // Porcentaje de cambio no disponible
+                    );
+                } else {
+                    console.error('Datos no válidos para crypto:', symbol, data);
+                     document.getElementById(`price-${symbol}`).textContent = 'Error';
+                }
+            } catch (error) {
+                console.error('Error fetching crypto price for', symbol, error);
+                document.getElementById(`price-${symbol}`).textContent = 'Error';
+            }
+        }
+
+        // --- ACTUALIZACIÓN EN TIEMPO REAL MEJORADA (WebSocket para SOL) ---
+
+        async function setupRealtimeUpdates() {
+            // Conectamos al stream de Binance para SOL/USDT. Nota: AlphaVantage usa USD, esto es un ejemplo.
+            const ws = new WebSocket('wss://stream.binance.com:9443/ws/solusdt@trade');
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const newPrice = parseFloat(data.p);
+                
+                // Obtenemos el precio anterior para calcular el cambio
+                const previousPrice = portfolioData['SOL'] ? portfolioData['SOL'].price : newPrice;
+                const change = newPrice - previousPrice;
+                const changePercent = (change / previousPrice) * 100;
+                
+                console.log(`WebSocket Update for SOL: $${newPrice.toFixed(2)}`);
+                updatePrice('SOL', newPrice, change, changePercent);
+                updateSummary(); // Re-calcular el resumen con el nuevo precio
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket Error:', error);
+            }
+        }
+
+        // --- INTEGRACIÓN DE NOTICIAS MEJORADA ---
+
+        async function fetchNews(symbol) {
+            const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${symbol}&apikey=${API_KEY_ALPHA}`;
+            const res = await fetch(url);
+            return await res.json();
+        }
+
+        async function toggleNews(symbol) {
+            const newsContainer = document.getElementById(`news-${symbol}`);
+            const btn = newsContainer.previousElementSibling;
+
+            if (newsContainer.classList.toggle('open')) {
+                btn.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar noticias';
+                btn.classList.add('open');
+
+                if (!newsContainer.innerHTML || newsContainer.innerHTML.includes('<div class="loading">')) {
+                    newsContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
+
+                    try {
+                        const newsData = await fetchNews(symbol);
+                        const articles = newsData.feed || []; // La API usa 'feed'
+                        
+                        let html = '';
+                        if (articles.length > 0) {
+                            // Limitar a 5 noticias para no saturar
+                            articles.slice(0, 5).forEach(article => {
+                                html += `
+                                    <article>
+                                        <h3><a href="${article.url}" target="_blank">${article.title}</a></h3>
+                                        <p>${article.summary.substring(0, 150)}...</p>
+                                        <small>${new Date(article.time_published).toLocaleString()}</small>
+                                    </article>
+                                `;
+                            });
+                        } else {
+                            html = '<div class="no-news">No hay noticias disponibles</div>';
+                        }
+                        newsContainer.innerHTML = html;
+                    } catch (error) {
+                        console.error('Error fetching news:', error);
+                        newsContainer.innerHTML = '<div class="error">Error al cargar las noticias</div>';
+                    }
+                }
+            } else {
+                btn.innerHTML = '<i class="fas fa-chevron-down"></i> Ver noticias';
+                btn.classList.remove('open');
+            }
+        }
+    </script>
 </body>
 </html>
