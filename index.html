@@ -2,13 +2,12 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8"/>
-    <title>Portfolio Real-Time (Alpha Vantage)</title>
+    <title>Portfolio Real-Time (Finnhub & CoinGecko)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
-
         :root {
             --bg-color: #1a1a2e;
             --card-bg: #16213e;
@@ -19,7 +18,6 @@
             --accent-color: #0f3460;
             --border-color: #5372f0;
         }
-
         body {
             font-family: 'Roboto', sans-serif;
             background-color: var(--bg-color);
@@ -27,7 +25,6 @@
             margin: 0;
             padding: 20px;
         }
-
         header {
             background-color: var(--card-bg);
             padding: 15px 30px;
@@ -35,7 +32,6 @@
             margin-bottom: 20px;
             border-left: 5px solid var(--border-color);
         }
-
         .header-content {
             display: flex;
             justify-content: space-between;
@@ -46,12 +42,10 @@
             font-size: 1.5em;
             font-weight: 700;
         }
-
         .last-update {
             font-size: 0.9em;
             color: var(--secondary-text);
         }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -63,35 +57,29 @@
             gap: 20px;
             margin-bottom: 30px;
         }
-
         .summary-card {
             background-color: var(--card-bg);
             padding: 20px;
             border-radius: 8px;
             text-align: center;
         }
-
         .summary-card h3 {
             margin: 0 0 10px;
             font-size: 0.9em;
             color: var(--secondary-text);
             text-transform: uppercase;
         }
-
         .summary-value {
             font-size: 2em;
             font-weight: 700;
         }
-
         .summary-positive { color: var(--positive-color); }
         .summary-negative { color: var(--negative-color); }
-
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
         }
-
         .card {
             background: var(--card-bg);
             border-radius: 10px;
@@ -99,28 +87,23 @@
             transition: transform 0.2s, box-shadow 0.2s;
             border: 1px solid var(--accent-color);
         }
-
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
-
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 15px;
         }
-
         .ticker-name { font-size: 1.5em; font-weight: 700; }
         .ticker-symbol { font-size: 0.9em; color: var(--secondary-text); }
-
         .price { font-size: 2.2em; font-weight: 700; margin-bottom: 10px; }
         
         .change { font-size: 1.2em; }
         .change.positive { color: var(--positive-color); }
         .change.negative { color: var(--negative-color); }
-
         .refresh-btn {
             display: block;
             margin: 30px auto;
@@ -136,9 +119,7 @@
         
         .refresh-btn:hover { background-color: #3a5fcd; }
         .refresh-btn .fa-sync-alt { margin-right: 8px; }
-
         .last-updated { text-align: center; color: var(--secondary-text); font-size: 0.9em; }
-
         /* Estilos para noticias */
         .news-toggle-btn {
             background: var(--accent-color);
@@ -155,24 +136,20 @@
         .news-toggle-btn.open {
             background-color: var(--border-color);
         }
-
         .news-container {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.5s ease-out;
             margin-top: 10px;
         }
-
         .news-container.open {
             max-height: 500px; /* Altura máxima para mostrar noticias */
              overflow-y: auto;
         }
-
         .news-container article {
             border-top: 1px solid var(--accent-color);
             padding: 10px 0;
         }
-
         .news-container h3 { font-size: 1em; margin: 0 0 5px; }
         .news-container p { font-size: 0.9em; margin: 0 0 5px; color: var(--secondary-text); }
         .news-container small { font-size: 0.8em; color: var(--border-color); }
@@ -180,7 +157,6 @@
         .loading, .error, .no-news { padding: 20px; text-align: center; }
         .fa-spinner { animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         /* --- CORAZÓN ANIMADO --- */
         .footer-heart {
             text-align: center;
@@ -188,7 +164,6 @@
             font-size: 1.1em;
             color: var(--secondary-text);
         }
-
         .heart {
             display: inline-block;
             position: relative;
@@ -197,7 +172,6 @@
             animation: heartbeat 1.2s infinite;
             transform-origin: center;
         }
-
         @keyframes heartbeat {
             0%   { transform: scale(1); }
             14%  { transform: scale(1.3); }
@@ -233,44 +207,38 @@
                 <div class="summary-value" id="positive-changes">--/--</div>
             </div>
         </div>
-
         <div class="grid" id="grid"></div>
-
         <button class="refresh-btn" onclick="loadPrices()"><i class="fas fa-sync-alt"></i> Actualizar ahora</button>
-        <div class="last-updated">Los datos se actualizan automáticamente cada minuto</div>
-
-        <!-- CORAZÓN Y FRASE FINAL -->
+        <div class="last-updated">Los datos se actualizan en tiempo real vía WebSocket</div>
         <div class="footer-heart">
             DESARROLLADO CON <span class="heart"><i class="fas fa-heart"></i></span> PARA INVERSORES.
         </div>
     </div>
-
     <script>
         // --- CONFIGURACIÓN ---
-        const API_KEY_ALPHA = '1SCSRNEAW6YWJME8'; // Tu clave API de Alpha Vantage
-        // NOTA: La clave de News API no se usa en esta versión, ya que usamos NEWS_SENTIMENT de Alpha Vantage
-        // const API_KEY_NEWS = 'aaf83dcbd8694668ad89247b959db678';
+        // Tu API Key de Finnhub ha sido insertada aquí.
+        const API_KEY_FINNHUB = 'd2s66m1r01qiq7a2qqhgd2s66m1r01qiq7a2qqi0';
+        const API_KEY_ALPHA = '1SCSRNEAW6YWJME8'; // Clave para noticias
 
         const tickers = [
             { symbol: 'PKG', name: 'Packaging America', type: 'stock', shares: 10 },
             { symbol: 'DE', name: 'Deere & Company', type: 'stock', shares: 5 },
-            { symbol: 'BRK.B', name: 'Berkshire Hathaway B', type: 'stock', shares: 8 },
+            { symbol: 'BRK-B', name: 'Berkshire Hathaway B', type: 'stock', shares: 8 }, // Finnhub usa BRK-B
             { symbol: 'SPGI', name: 'S&P Global', type: 'stock', shares: 12 },
             { symbol: 'BLK', name: 'BlackRock', type: 'stock', shares: 7 },
             { symbol: 'WMT', name: 'Walmart', type: 'stock', shares: 15 },
             { symbol: 'BOIL', name: 'ProShares Ultra Bloomberg Natural Gas', type: 'stock', shares: 50 },
-            { symbol: 'solana', name: 'Solana', type: 'crypto', market: 'usd', shares: 20 } // Cambiado a minúsculas para CoinGecko
+            { symbol: 'solana', name: 'Solana', type: 'crypto', market: 'usd', shares: 20 }
         ];
 
         let portfolioData = {};
 
         // --- LÓGICA PRINCIPAL ---
-
         document.addEventListener('DOMContentLoaded', () => {
             renderGrid();
             loadPrices();
-            setupRealtimeUpdates(); // Iniciar WebSocket para SOL
-            setInterval(loadPrices, 60000); // Actualización automática cada 60 segundos
+            setupStockRealtimeUpdates(); 
+            setupCryptoRealtimeUpdates();
         });
 
         function renderGrid() {
@@ -299,7 +267,7 @@
         }
 
         async function loadPrices() {
-            console.log('Actualizando precios...');
+            console.log('Cargando precios iniciales...');
             const promises = tickers.map(ticker => {
                 if (ticker.type === 'stock') {
                     return fetchStockPrice(ticker.symbol);
@@ -307,7 +275,6 @@
                     return fetchCryptoPrice(ticker.symbol, ticker.market);
                 }
             });
-
             await Promise.all(promises);
             updateSummary();
             document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
@@ -316,10 +283,9 @@
         function updatePrice(symbol, price, change, changePercent) {
              const priceEl = document.getElementById(`price-${symbol}`);
              const changeEl = document.getElementById(`change-${symbol}`);
-
              if (!priceEl || !changeEl) return;
 
-             priceEl.textContent = `$${price.toFixed(2)}`;
+             priceEl.textContent = `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
              
              const changeClass = change >= 0 ? 'positive' : 'negative';
              const sign = change >= 0 ? '+' : '';
@@ -327,27 +293,28 @@
              changeEl.innerHTML = `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
              changeEl.className = `change ${changeClass}`;
 
-             // Almacenar datos para cálculos de resumen
              const tickerConfig = tickers.find(t => t.symbol === symbol);
-             portfolioData[symbol] = {
-                 price,
-                 change,
-                 shares: tickerConfig.shares
-             };
+             
+             if (!portfolioData[symbol]) portfolioData[symbol] = {};
+             portfolioData[symbol].price = price;
+             portfolioData[symbol].change = change;
+             portfolioData[symbol].shares = tickerConfig.shares;
         }
 
         function updateSummary() {
             let totalValue = 0;
             let totalDayGain = 0;
             let positiveMovers = 0;
-            const totalAssets = Object.keys(portfolioData).length;
+            const totalAssets = tickers.length;
 
             for (const symbol in portfolioData) {
                 const data = portfolioData[symbol];
-                totalValue += data.price * data.shares;
-                totalDayGain += data.change * data.shares;
-                if (data.change > 0) {
-                    positiveMovers++;
+                if(data.price && data.shares) {
+                    totalValue += data.price * data.shares;
+                    totalDayGain += data.change * data.shares;
+                    if (data.change > 0) {
+                        positiveMovers++;
+                    }
                 }
             }
             
@@ -363,22 +330,22 @@
         }
 
         // --- OBTENCIÓN DE DATOS (APIs) ---
-
         async function fetchStockPrice(symbol) {
-            const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEY_ALPHA}`;
+            const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY_FINNHUB}`;
             try {
                 const res = await fetch(url);
-                const data = await res.json();
-                const quote = data['Global Quote'];
-                if (quote && quote['05. price']) {
+                const quote = await res.json();
+
+                if (quote.c) {
                     updatePrice(
                         symbol,
-                        parseFloat(quote['05. price']),
-                        parseFloat(quote['09. change']),
-                        parseFloat(quote['10. change percent'].replace('%', ''))
+                        quote.c, // Current price
+                        quote.d, // Change
+                        quote.dp // Percent change
                     );
+                    portfolioData[symbol] = { ...portfolioData[symbol], previousClose: quote.pc };
                 } else {
-                    console.error('Datos no válidos para el stock:', symbol, data);
+                    console.error('Datos no válidos para el stock:', symbol, quote);
                      document.getElementById(`price-${symbol}`).textContent = 'Error';
                 }
             } catch (error) {
@@ -386,8 +353,7 @@
                 document.getElementById(`price-${symbol}`).textContent = 'Error';
             }
         }
-
-        // Reemplazada la función fetchCryptoPrice para usar CoinGecko API (como en PARA SOLANA.html)
+        
         async function fetchCryptoPrice(symbol, market) {
             try {
                 const url = `https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=${market}&include_24hr_change=true`;
@@ -397,8 +363,8 @@
                 if (data[symbol]) {
                     const price = data[symbol][market];
                     const change24h = data[symbol][`${market}_24h_change`] || 0;
-                    const changeAmount = (price * change24h) / 100;
-
+                    const price24hAgo = price / (1 + (change24h / 100));
+                    const changeAmount = price - price24hAgo;
                     updatePrice(symbol, price, changeAmount, change24h);
                 } else {
                     throw new Error('No data');
@@ -409,34 +375,64 @@
             }
         }
 
-        // --- ACTUALIZACIÓN EN TIEMPO REAL MEJORADA (WebSocket para SOL) ---
+        // --- ACTUALIZACIÓN EN TIEMPO REAL (WebSockets) ---
+        function setupStockRealtimeUpdates() {
+            const socket = new WebSocket(`wss://ws.finnhub.io?token=${API_KEY_FINNHUB}`);
 
-        // Reemplazada la función setupRealtimeUpdates para que coincida con PARA SOLANA.html
-        async function setupRealtimeUpdates() {
-            try {
-                const ws = new WebSocket('wss://stream.binance.com:9443/ws/solusdt@ticker');
+            socket.addEventListener('open', function (event) {
+                console.log('Conectado a Finnhub WebSocket.');
+                tickers.forEach(ticker => {
+                    if (ticker.type === 'stock') {
+                        socket.send(JSON.stringify({'type':'subscribe', 'symbol': ticker.symbol}));
+                    }
+                });
+            });
 
-                ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    const newPrice = parseFloat(data.c);
-                    const changePercent = parseFloat(data.P);
-                    const changeAmount = (newPrice * changePercent) / 100;
-                    
-                    console.log(`WebSocket Update for SOL: $${newPrice.toFixed(2)}`);
-                    updatePrice('solana', newPrice, changeAmount, changePercent);
-                    updateSummary();
-                };
-
-                ws.onerror = (error) => {
-                    console.error('WebSocket Error:', error);
+            socket.addEventListener('message', function (event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'trade' && data.data) {
+                    data.data.forEach(trade => {
+                        const symbol = trade.s;
+                        const newPrice = trade.p;
+                        const stockData = portfolioData[symbol];
+                        
+                        if (stockData && stockData.previousClose) {
+                            const change = newPrice - stockData.previousClose;
+                            const changePercent = (change / stockData.previousClose) * 100;
+                            
+                            updatePrice(symbol, newPrice, change, changePercent);
+                            updateSummary();
+                            document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
+                        }
+                    });
                 }
-            } catch (error) {
-                console.error('WebSocket setup failed:', error);
-            }
+            });
+            
+            socket.addEventListener('error', (error) => console.error('Finnhub WebSocket Error:', error));
+            socket.addEventListener('close', () => console.log('Finnhub WebSocket desconectado.'));
         }
 
-        // --- INTEGRACIÓN DE NOTICIAS MEJORADA ---
+        function setupCryptoRealtimeUpdates() {
+            const solanaTicker = tickers.find(t => t.symbol === 'solana');
+            if (!solanaTicker) return;
 
+            const ws = new WebSocket('wss://stream.binance.com:9443/ws/solusdt@ticker');
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const newPrice = parseFloat(data.c);
+                const changePercent = parseFloat(data.P);
+                const changeAmount = parseFloat(data.p);
+                
+                updatePrice('solana', newPrice, changeAmount, changePercent);
+                updateSummary();
+                 document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
+            };
+            ws.onerror = (error) => console.error('Binance WebSocket Error:', error);
+            ws.onclose = () => console.log('Binance WebSocket desconectado.');
+        }
+
+        // --- INTEGRACIÓN DE NOTICIAS (Usa Alpha Vantage) ---
         async function fetchNews(symbol) {
             const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${symbol}&apikey=${API_KEY_ALPHA}`;
             const res = await fetch(url);
@@ -446,25 +442,21 @@
         async function toggleNews(symbol) {
             const newsContainer = document.getElementById(`news-${symbol}`);
             const btn = newsContainer.previousElementSibling;
-
             if (newsContainer.classList.toggle('open')) {
                 btn.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar noticias';
                 btn.classList.add('open');
-
                 if (!newsContainer.innerHTML || newsContainer.innerHTML.includes('<div class="loading">')) {
                     newsContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
-
                     try {
                         const newsData = await fetchNews(symbol);
-                        const articles = newsData.feed || []; // La API usa 'feed'
+                        const articles = newsData.feed || [];
                         
                         let html = '';
                         if (articles.length > 0) {
-                            // Limitar a 5 noticias para no saturar
                             articles.slice(0, 5).forEach(article => {
                                 html += `
                                     <article>
-                                        <h3><a href="${article.url}" target="_blank">${article.title}</a></h3>
+                                        <h3><a href="${article.url}" target="_blank" rel="noopener noreferrer">${article.title}</a></h3>
                                         <p>${article.summary.substring(0, 150)}...</p>
                                         <small>${new Date(article.time_published).toLocaleString()}</small>
                                     </article>
