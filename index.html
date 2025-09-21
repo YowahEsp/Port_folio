@@ -146,7 +146,7 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
         .news-container.open {
-            max-height: 500px;
+            max-height: 600px;
             overflow-y: auto;
             padding: 15px;
             border: 1px solid var(--news-border);
@@ -188,6 +188,15 @@
             flex-wrap: wrap;
         }
         .news-container small i { font-size: 0.8em; }
+        .news-source {
+            font-size: 0.8em;
+            background-color: #dbeafe;
+            color: #1e40af;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
 
         .loading, .error, .no-news { 
             padding: 30px 20px; 
@@ -236,6 +245,52 @@
             42%  { transform: scale(1.3); }
             70%  { transform: scale(1); }
         }
+        
+        /* Estilo para indicar traducción en progreso */
+        .translating {
+            opacity: 0.7;
+        }
+        
+        /* Sección de noticias generales */
+        .general-news-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            border-left: 4px solid var(--border-color);
+        }
+        .general-news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .general-news-toggle {
+            background: var(--accent-color);
+            color: var(--primary-text);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .general-news-toggle.open {
+            background-color: var(--border-color);
+        }
+        .general-news-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+        .general-news-container.open {
+            max-height: 800px;
+            overflow-y: auto;
+        }
+        .general-news-title {
+            font-size: 1.3em;
+            margin: 0;
+            color: var(--primary-text);
+        }
     </style>
 </head>
 <body>
@@ -262,6 +317,18 @@
             </div>
         </div>
         <div class="grid" id="grid"></div>
+        
+        <!-- Sección de noticias generales de BBC y Sky News -->
+        <div class="general-news-section">
+            <div class="general-news-header">
+                <h2 class="general-news-title">Noticias Generales de Mercados</h2>
+                <button class="general-news-toggle" onclick="toggleGeneralNews()">
+                    <i class="fas fa-chevron-down"></i> Ver noticias internacionales
+                </button>
+            </div>
+            <div class="general-news-container" id="general-news-container"></div>
+        </div>
+        
         <button class="refresh-btn" onclick="loadPrices()"><i class="fas fa-sync-alt"></i> Actualizar ahora</button>
         <div class="last-updated">Los datos se actualizan en tiempo real vía WebSocket</div>
         <div class="footer-heart">
@@ -428,22 +495,52 @@
             ws.onclose = () => console.log('Binance WS cerrado');
         }
 
-        /* ---------- NOTICIAS vía RSS ---------- */
+        /* ---------- NOTICIAS vía RSS con TRADUCCIÓN AUTOMÁTICA ---------- */
         // Usamos un proxy CORS para evitar problemas de acceso
         const RSS_PROXY = 'https://api.allorigins.win/raw?url=';
-
+        
+        // Fuentes RSS específicas por símbolo
         const RSS_MAP = {
-            'PKG': 'https://es.finance.yahoo.com/rss/2.0/headline?s=PKG&region=ES&lang=es-ES',
-            'DE': 'https://es.finance.yahoo.com/rss/2.0/headline?s=DE&region=ES&lang=es-ES',
-            'BRK-B': 'https://es.finance.yahoo.com/rss/2.0/headline?s=BRK-B&region=ES&lang=es-ES',
-            'SPGI': 'https://es.finance.yahoo.com/rss/2.0/headline?s=SPGI&region=ES&lang=es-ES',
-            'BLK': 'https://es.finance.yahoo.com/rss/2.0/headline?s=BLK&region=ES&lang=es-ES',
-            'WMT': 'https://es.finance.yahoo.com/rss/2.0/headline?s=WMT&region=ES&lang=es-ES',
-            'BOIL': 'https://es.finance.yahoo.com/rss/2.0/headline?s=BOIL&region=ES&lang=es-ES',
-            'solana': 'https://www.criptonoticias.com/feed/?s=solana'  // Fuente en español para Solana
+            'PKG': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=PKG&region=US&lang=en-US',
+            'DE': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=DE&region=US&lang=en-US',
+            'BRK-B': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BRK-B&region=US&lang=en-US',
+            'SPGI': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=SPGI&region=US&lang=en-US',
+            'BLK': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BLK&region=US&lang=en-US',
+            'WMT': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=WMT&region=US&lang=en-US',
+            'BOIL': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BOIL&region=US&lang=en-US',
+            'solana': 'https://cryptonews-api.com/api/v1/category?section=alltickers&tickers=SOL&items=10&token=your_api_key_here'
         };
 
-        async function parseRSS(url) {
+        // Fuentes de cripto exclusivas para Solana
+        const SOLANA_CRYPTO_SOURCES = [
+            {
+                name: 'CoinDesk Solana',
+                url: 'https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml&category=solana'
+            },
+            {
+                name: 'CryptoSlate Solana',
+                url: 'https://cryptoslate.com/tag/solana/feed/'
+            },
+            {
+                name: 'The Block Solana',
+                url: 'https://www.theblock.co/rss/tag/solana'
+            },
+            {
+                name: 'Decrypt Solana',
+                url: 'https://decrypt.co/feed?post_type=tag&tag_name=solana'
+            }
+        ];
+
+        // Fuentes de noticias generales
+        const GENERAL_NEWS_SOURCES = {
+            'BBC Business': 'https://feeds.bbci.co.uk/news/business/rss.xml',
+            'Sky News Business': 'https://feeds.skynews.com/feeds/rss/business.xml'
+        };
+
+        // Para Solana, si la API anterior no funciona, usamos esta alternativa
+        const SOLANA_RSS = 'https://news.google.com/rss/search?q=Solana+crypto&hl=en-US&gl=US&ceid=US:en';
+
+        async function parseRSS(url, symbol, sourceName = '') {
             try {
                 // Usamos el proxy CORS para evitar problemas
                 const proxyUrl = RSS_PROXY + encodeURIComponent(url);
@@ -463,21 +560,141 @@
                     throw new Error("Error al parsear el XML RSS");
                 }
 
-                const items = doc.querySelectorAll("item");
-                if (!items || items.length === 0) {
-                    throw new Error("No se encontraron noticias en el feed");
+                let items = [];
+                const itemElements = doc.querySelectorAll("item");
+                
+                if (!itemElements || itemElements.length === 0) {
+                    // Intentar con otro formato (atom)
+                    const entries = doc.querySelectorAll("entry");
+                    if (entries && entries.length > 0) {
+                        items = Array.from(entries).slice(0, 5).map(entry => ({
+                            title: entry.querySelector("title")?.textContent || "Sin título",
+                            link: entry.querySelector("link")?.getAttribute("href") || 
+                                  entry.querySelector("link[href]")?.getAttribute("href") || "#",
+                            desc: entry.querySelector("content")?.textContent?.replace(/<[^>]+>/g, "").substring(0, 200) + "..." || 
+                                  entry.querySelector("summary")?.textContent?.substring(0, 200) + "..." || "Sin resumen",
+                            date: new Date(entry.querySelector("updated")?.textContent || 
+                                         entry.querySelector("published")?.textContent || Date.now()),
+                            symbol: symbol,
+                            source: sourceName
+                        }));
+                    } else {
+                        throw new Error("No se encontraron noticias en el feed");
+                    }
+                } else {
+                    // Formato RSS estándar
+                    items = Array.from(itemElements)
+                        .slice(0, 5)
+                        .map(it => ({
+                            title: it.querySelector("title")?.textContent || "Sin título",
+                            link: it.querySelector("link")?.textContent || "#",
+                            desc: it.querySelector("description")?.textContent?.replace(/<[^>]+>/g, "").substring(0, 200) + "..." || "Sin resumen",
+                            date: new Date(it.querySelector("pubDate")?.textContent || 
+                                         it.querySelector("dc\\:date")?.textContent || Date.now()),
+                            symbol: symbol,
+                            source: sourceName
+                        }));
                 }
 
-                return Array.from(items).slice(0, 5).map(it => ({
-                    title: it.querySelector("title")?.textContent || "Sin título",
-                    link: it.querySelector("link")?.textContent || "#",
-                    desc: it.querySelector("description")?.textContent?.replace(/<[^>]+>/g, "").substring(0, 180) + "..." || "Sin resumen",
-                    date: new Date(it.querySelector("pubDate")?.textContent || Date.now())
-                }));
+                return items;
             } catch (e) {
                 console.error("Error al obtener RSS:", e);
                 throw new Error("No se pudieron cargar las noticias");
             }
+        }
+
+        // Función para detectar si el texto está en inglés
+        function isEnglish(text) {
+            if (!text || text.length === 0) return false;
+            
+            // Contamos caracteres ASCII comunes en inglés
+            const englishChars = text.match(/[a-zA-Z]/g) || [];
+            const totalChars = text.length;
+            
+            // Si más del 70% de los caracteres alfabéticos son ASCII, probablemente es inglés
+            if (englishChars.length / Math.max(1, totalChars) > 0.7) {
+                return true;
+            }
+            
+            // Palabras comunes en inglés
+            const commonEnglishWords = ['the', 'and', 'for', 'with', 'this', 'that', 'from', 'which', 'company', 'market', 'stock', 'price', 'business', 'economy', 'crypto', 'blockchain', 'token', 'defi', 'nft'];
+            const lowerText = text.toLowerCase();
+            
+            for (let word of commonEnglishWords) {
+                if (lowerText.includes(word)) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // Función para traducir texto usando la API de Google Translate a través de un proxy
+        async function translateText(text, targetLang = 'es') {
+            if (!text || text.trim() === '') return text;
+            
+            try {
+                // Usamos un servicio de traducción gratuito a través de un proxy
+                const translateUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
+                const response = await fetch(translateUrl);
+                const data = await response.json();
+                
+                if (data && data.responseData && data.responseData.translatedText) {
+                    return data.responseData.translatedText;
+                } else {
+                    // Fallback: si la API principal falla, intentamos con otro servicio
+                    const fallbackUrl = `https://libretranslate.de/translate`;
+                    const fallbackResponse = await fetch(fallbackUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            q: text,
+                            source: 'en',
+                            target: targetLang,
+                            format: 'text'
+                        })
+                    });
+                    
+                    const fallbackData = await fallbackResponse.json();
+                    if (fallbackData.translatedText) {
+                        return fallbackData.translatedText;
+                    }
+                }
+                
+                // Si todo falla, devolvemos el texto original
+                return text;
+            } catch (e) {
+                console.error("Error en la traducción:", e);
+                return text; // Devolvemos el texto original si falla la traducción
+            }
+        }
+
+        // Función para traducir todas las noticias de un símbolo
+        async function translateNewsItems(items) {
+            const translatedItems = [];
+            
+            for (let item of items) {
+                try {
+                    // Verificamos si el título o la descripción necesitan traducción
+                    const needsTranslation = isEnglish(item.title) || isEnglish(item.desc);
+                    
+                    if (needsTranslation) {
+                        // Traducimos título y descripción
+                        item.title = await translateText(item.title);
+                        item.desc = await translateText(item.desc);
+                    }
+                    
+                    translatedItems.push(item);
+                } catch (e) {
+                    console.error("Error traduciendo noticia:", e);
+                    // Si falla la traducción de un elemento, lo dejamos en su forma original
+                    translatedItems.push(item);
+                }
+            }
+            
+            return translatedItems;
         }
 
         window.toggleNews = async function (symbol) {
@@ -493,32 +710,213 @@
                     return;
                 }
 
-                container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando noticias…</div>';
+                container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando y traduciendo noticias…</div>';
 
                 try {
-                    const feedUrl = RSS_MAP[symbol];
-                    if (!feedUrl) throw new Error('No hay fuente de noticias configurada para este símbolo');
+                    let allItems = [];
+                    
+                    // Si es Solana, cargamos las fuentes exclusivas de cripto primero
+                    if (symbol === 'solana') {
+                        // Cargar fuentes de cripto exclusivas para Solana
+                        const cryptoNewsPromises = SOLANA_CRYPTO_SOURCES.map(source => 
+                            parseRSS(source.url, symbol, source.name).catch(err => {
+                                console.log(`No se pudieron cargar noticias de ${source.name}:`, err);
+                                return [];
+                            })
+                        );
+                        
+                        const cryptoNewsResults = await Promise.all(cryptoNewsPromises);
+                        
+                        // Combinar todas las noticias de cripto
+                        cryptoNewsResults.forEach(newsList => {
+                            if (Array.isArray(newsList) && newsList.length > 0) {
+                                allItems = allItems.concat(newsList);
+                            }
+                        });
+                        
+                        // También cargar la fuente general de Solana
+                        try {
+                            const generalSolanaNews = await parseRSS(SOLANA_RSS, symbol, 'Google News');
+                            allItems = allItems.concat(generalSolanaNews);
+                        } catch (err) {
+                            console.log('No se pudieron cargar noticias generales de Solana:', err);
+                        }
+                    } else {
+                        // Para acciones normales, usar las fuentes existentes
+                        let feedUrl = RSS_MAP[symbol];
+                        if (!feedUrl) {
+                            throw new Error('No hay fuente de noticias configurada para este símbolo');
+                        }
 
-                    const items = await parseRSS(feedUrl);
+                        let items = await parseRSS(feedUrl, symbol, 'Yahoo Finance');
+                        allItems = allItems.concat(items);
+                    }
 
-                    if (!items.length) {
+                    // Añadir noticias de BBC y Sky News relacionadas con el símbolo
+                    const generalNewsPromises = [];
+                    
+                    // Buscar en BBC News
+                    const bbcSearchUrl = `https://feeds.bbci.co.uk/news/business/rss.xml?search=${encodeURIComponent(symbol)}`;
+                    generalNewsPromises.push(
+                        parseRSS(bbcSearchUrl, symbol, 'BBC Business').catch(err => {
+                            console.log(`No se encontraron noticias de BBC para ${symbol}:`, err);
+                            return [];
+                        })
+                    );
+                    
+                    // Buscar en Sky News
+                    const skySearchUrl = `https://feeds.skynews.com/feeds/rss/business.xml`;
+                    // Sky News no tiene parámetro de búsqueda, así que obtenemos las noticias generales
+                    generalNewsPromises.push(
+                        parseRSS(skySearchUrl, symbol, 'Sky News Business').catch(err => {
+                            console.log(`No se encontraron noticias de Sky News para ${symbol}:`, err);
+                            return [];
+                        })
+                    );
+                    
+                    // Obtener noticias generales
+                    const generalNewsResults = await Promise.all(generalNewsPromises);
+                    
+                    // Combinar todas las noticias
+                    for (let newsList of generalNewsResults) {
+                        if (Array.isArray(newsList) && newsList.length > 0) {
+                            // Filtrar noticias relacionadas con el símbolo
+                            const filteredNews = newsList.filter(item => 
+                                item.title.toLowerCase().includes(symbol.toLowerCase()) || 
+                                item.desc.toLowerCase().includes(symbol.toLowerCase())
+                            );
+                            
+                            allItems = allItems.concat(filteredNews);
+                        }
+                    }
+                    
+                    // Eliminar duplicados (por título)
+                    const uniqueItems = [];
+                    const titles = new Set();
+                    
+                    for (let item of allItems) {
+                        if (!titles.has(item.title)) {
+                            titles.add(item.title);
+                            uniqueItems.push(item);
+                        }
+                    }
+                    
+                    // Ordenar por fecha (las más recientes primero)
+                    uniqueItems.sort((a, b) => b.date - a.date);
+                    
+                    // Limitar a 8 noticias en total
+                    allItems = uniqueItems.slice(0, 8);
+
+                    if (!allItems.length) {
                         container.innerHTML = '<div class="no-news"><i class="fas fa-newspaper"></i> No hay noticias disponibles</div>';
                         return;
                     }
 
-                    container.innerHTML = items.map(it => `
+                    // Traducimos las noticias si están en inglés
+                    allItems = await translateNewsItems(allItems);
+
+                    // Renderizamos las noticias traducidas
+                    container.innerHTML = allItems.map(it => `
                         <article>
-                            <h3><a href="${it.link}" target="_blank" rel="noopener">${it.title}</a></h3>
+                            <h3>
+                                <a href="${it.link}" target="_blank" rel="noopener">${it.title}</a>
+                                ${it.source ? `<span class="news-source">${it.source}</span>` : ''}
+                            </h3>
                             <p>${it.desc}</p>
                             <small><i class="fas fa-clock"></i> ${it.date.toLocaleString('es-ES')}</small>
                         </article>
                     `).join('');
+                    
                 } catch (e) {
                     console.error(`Error cargando noticias para ${symbol}:`, e);
                     container.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> ${e.message || 'Error al cargar noticias'}</div>`;
                 }
             } else {
                 btn.innerHTML = '<i class="fas fa-chevron-down"></i> Ver noticias';
+                btn.classList.remove('open');
+            }
+        };
+        
+        // Función para cargar y mostrar noticias generales de BBC y Sky News
+        window.toggleGeneralNews = async function () {
+            const container = document.getElementById('general-news-container');
+            const btn = document.querySelector('.general-news-toggle');
+
+            if (container.classList.toggle('open')) {
+                btn.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar noticias internacionales';
+                btn.classList.add('open');
+
+                // Si ya hay contenido, no recargar
+                if (container.querySelector('article') || container.querySelector('.error')) {
+                    return;
+                }
+
+                container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando noticias internacionales y traduciendo al español…</div>';
+
+                try {
+                    // Obtener noticias de BBC y Sky News
+                    const newsPromises = [];
+                    
+                    // BBC Business
+                    newsPromises.push(
+                        parseRSS(GENERAL_NEWS_SOURCES['BBC Business'], 'general', 'BBC Business')
+                        .catch(err => {
+                            console.log('Error cargando BBC Business:', err);
+                            return [];
+                        })
+                    );
+                    
+                    // Sky News Business
+                    newsPromises.push(
+                        parseRSS(GENERAL_NEWS_SOURCES['Sky News Business'], 'general', 'Sky News Business')
+                        .catch(err => {
+                            console.log('Error cargando Sky News Business:', err);
+                            return [];
+                        })
+                    );
+                    
+                    const results = await Promise.all(newsPromises);
+                    
+                    // Combinar todas las noticias
+                    let allNews = [];
+                    results.forEach(newsList => {
+                        if (Array.isArray(newsList)) {
+                            allNews = allNews.concat(newsList);
+                        }
+                    });
+                    
+                    // Ordenar por fecha (las más recientes primero)
+                    allNews.sort((a, b) => b.date - a.date);
+                    
+                    // Limitar a 15 noticias
+                    allNews = allNews.slice(0, 15);
+                    
+                    if (!allNews.length) {
+                        container.innerHTML = '<div class="no-news"><i class="fas fa-newspaper"></i> No hay noticias internacionales disponibles en este momento</div>';
+                        return;
+                    }
+
+                    // Traducimos las noticias si están en inglés
+                    allNews = await translateNewsItems(allNews);
+
+                    // Renderizamos las noticias traducidas
+                    container.innerHTML = allNews.map(item => `
+                        <article>
+                            <h3>
+                                <a href="${item.link}" target="_blank" rel="noopener">${item.title}</a>
+                                <span class="news-source">${item.source}</span>
+                            </h3>
+                            <p>${item.desc}</p>
+                            <small><i class="fas fa-clock"></i> ${item.date.toLocaleString('es-ES')}</small>
+                        </article>
+                    `).join('');
+                    
+                } catch (e) {
+                    console.error('Error cargando noticias generales:', e);
+                    container.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> Error al cargar noticias internacionales: ${e.message}</div>`;
+                }
+            } else {
+                btn.innerHTML = '<i class="fas fa-chevron-down"></i> Ver noticias internacionales';
                 btn.classList.remove('open');
             }
         };
