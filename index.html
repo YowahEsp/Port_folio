@@ -318,7 +318,6 @@
         </div>
         <div class="grid" id="grid"></div>
         
-        <!-- Sección de noticias generales de BBC y Sky News -->
         <div class="general-news-section">
             <div class="general-news-header">
                 <h2 class="general-news-title">Noticias Generales de Mercados</h2>
@@ -780,11 +779,15 @@
                     // Combinar todas las noticias
                     for (let newsList of generalNewsResults) {
                         if (Array.isArray(newsList) && newsList.length > 0) {
-                            // Filtrar noticias relacionadas con el símbolo
+                            // --- INICIO DE LA CORRECCIÓN ---
+                            // Creamos una expresión regular para buscar el símbolo como una palabra completa, ignorando mayúsculas y minúsculas.
+                            // El \b significa "límite de palabra".
+                            const symbolRegex = new RegExp(`\\b${symbol}\\b`, 'i');
+
                             const filteredNews = newsList.filter(item => 
-                                item.title.toLowerCase().includes(symbol.toLowerCase()) || 
-                                item.desc.toLowerCase().includes(symbol.toLowerCase())
+                                symbolRegex.test(item.title) || symbolRegex.test(item.desc)
                             );
+                            // --- FIN DE LA CORRECCIÓN ---
                             
                             allItems = allItems.concat(filteredNews);
                         }
