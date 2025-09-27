@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8"/>
-    <title>Portfolio Real-Time (RSS en Español)</title>
+    <title>Portfolio Real-Time (RSS en EspaÃ±ol)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -246,12 +246,12 @@
             70%  { transform: scale(1); }
         }
         
-        /* Estilo para indicar traducción en progreso */
+        /* Estilo para indicar traducciÃ³n en progreso */
         .translating {
             opacity: 0.7;
         }
         
-        /* Sección de noticias generales */
+        /* SecciÃ³n de noticias generales - CORREGIDO PARA USAR LOS MISMOS ESTILOS */
         .general-news-section {
             margin-top: 30px;
             padding: 20px;
@@ -277,14 +277,85 @@
         .general-news-toggle.open {
             background-color: var(--border-color);
         }
+        /* AQUÃ ESTÃ EL CAMBIO PRINCIPAL - usar los mismos estilos que .news-container */
         .general-news-container {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.5s ease-out;
+            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+            margin-top: 10px;
+            background-color: var(--news-bg);
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
         .general-news-container.open {
             max-height: 800px;
             overflow-y: auto;
+            padding: 15px;
+            border: 1px solid var(--news-border);
+        }
+        /* Aplicar los mismos estilos de artÃ­culos que en .news-container */
+        .general-news-container article {
+            border-bottom: 1px solid var(--news-border);
+            padding: 16px 0;
+            transition: background-color 0.2s ease;
+        }
+        .general-news-container article:last-child { border-bottom: none; }
+        .general-news-container article:hover { background-color: var(--news-hover); }
+        .general-news-container h3 { 
+            font-size: 1.1em; 
+            margin: 0 0 8px; 
+            line-height: 1.4;
+            font-weight: 600;
+        }
+        .general-news-container h3 a {
+            color: var(--news-title);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .general-news-container h3 a:hover {
+            color: #1e40af;
+            text-decoration: underline;
+        }
+        .general-news-container p { 
+            font-size: 0.95em; 
+            margin: 0 0 10px; 
+            color: var(--news-summary);
+            line-height: 1.5;
+        }
+        .general-news-container small { 
+            font-size: 0.85em; 
+            color: var(--news-date);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .general-news-container small i { font-size: 0.8em; }
+        /* Aplicar los mismos estilos de carga/error que en .news-container */
+        .general-news-container .loading, 
+        .general-news-container .error, 
+        .general-news-container .no-news { 
+            padding: 30px 20px; 
+            text-align: center;
+            color: var(--news-text);
+            background-color: var(--news-bg);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .general-news-container .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+        .general-news-container .error {
+            color: #dc2626;
+            background-color: #fef2f2;
+        }
+        .general-news-container .no-news {
+            color: var(--news-date);
+            font-style: italic;
         }
         .general-news-title {
             font-size: 1.3em;
@@ -308,7 +379,7 @@
                 <div class="summary-value" id="total-value">$---</div>
             </div>
             <div class="summary-card">
-                <h3>GANANCIAS DEL DÍA</h3>
+                <h3>GANANCIAS DEL DÃA</h3>
                 <div class="summary-value" id="day-gain">+$---</div>
             </div>
             <div class="summary-card">
@@ -329,14 +400,14 @@
         </div>
         
         <button class="refresh-btn" onclick="loadPrices()"><i class="fas fa-sync-alt"></i> Actualizar ahora</button>
-        <div class="last-updated">Los datos se actualizan en tiempo real vía WebSocket</div>
+        <div class="last-updated">Los datos se actualizan en tiempo real vÃ­a WebSocket</div>
         <div class="footer-heart">
             DESARROLLADO CON <span class="heart"><i class="fas fa-heart"></i></span> PARA INVERSORES.
         </div>
     </div>
 
     <script>
-        /* ---------- CONFIGURACIÓN ---------- */
+        /* ---------- CONFIGURACIÃ"N ---------- */
         const API_KEY_FINNHUB = 'd2s66m1r01qiq7a2qqhgd2s66m1r01qiq7a2qqi0';
 
         const tickers = [
@@ -494,11 +565,11 @@
             ws.onclose = () => console.log('Binance WS cerrado');
         }
 
-        /* ---------- NOTICIAS vía RSS con TRADUCCIÓN AUTOMÁTICA ---------- */
+        /* ---------- NOTICIAS vÃ­a RSS con TRADUCCIÃ"N AUTOMÃTICA ---------- */
         // Usamos un proxy CORS para evitar problemas de acceso
         const RSS_PROXY = 'https://api.allorigins.win/raw?url=';
         
-        // Fuentes RSS específicas por símbolo
+        // Fuentes RSS especÃ­ficas por sÃ­mbolo
         const RSS_MAP = {
             'PKG': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=PKG&region=US&lang=en-US',
             'DE': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=DE&region=US&lang=en-US',
@@ -567,7 +638,7 @@
                     const entries = doc.querySelectorAll("entry");
                     if (entries && entries.length > 0) {
                         items = Array.from(entries).slice(0, 5).map(entry => ({
-                            title: entry.querySelector("title")?.textContent || "Sin título",
+                            title: entry.querySelector("title")?.textContent || "Sin tÃ­tulo",
                             link: entry.querySelector("link")?.getAttribute("href") || 
                                   entry.querySelector("link[href]")?.getAttribute("href") || "#",
                             desc: entry.querySelector("content")?.textContent?.replace(/<[^>]+>/g, "").substring(0, 200) + "..." || 
@@ -581,7 +652,7 @@
                         throw new Error("No se encontraron noticias en el feed");
                     }
                 } else {
-                    // Formato RSS estándar
+                    // Formato RSS estÃ¡ndar
                     items = Array.from(itemElements)
                         .slice(0, 5)
                         .map(it => ({
