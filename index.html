@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8"/>
-    <title>Portfolio Real-Time (RSS en EspaÃ±ol)</title>
+    <title>Portfolio Tracker — Tiempo Real</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -379,7 +379,7 @@
                 <div class="summary-value" id="total-value">$---</div>
             </div>
             <div class="summary-card">
-                <h3>GANANCIAS DEL DÃA</h3>
+                <h3>GANANCIAS DEL DÍA</h3>
                 <div class="summary-value" id="day-gain">+$---</div>
             </div>
             <div class="summary-card">
@@ -410,15 +410,22 @@
         /* ---------- CONFIGURACIÃ"N ---------- */
         const API_KEY_FINNHUB = 'd2s66m1r01qiq7a2qqhgd2s66m1r01qiq7a2qqi0';
 
+        // AJUSTA el campo "shares" (participaciones) de cada posición a las tuyas reales:
+        // el valor total de la cartera se calcula como shares × precio.
         const tickers = [
-            { symbol: 'PKG',  name: 'Packaging America', type: 'stock', shares: 10 },
-            { symbol: 'DE',   name: 'Deere & Company',   type: 'stock', shares: 5 },
-            { symbol: 'BRK-B',name: 'Berkshire Hathaway B',type:'stock',shares:8},
-            { symbol: 'SPGI', name: 'S&P Global',         type: 'stock', shares: 12 },
-            { symbol: 'BLK',  name: 'BlackRock',          type: 'stock', shares: 7 },
-            { symbol: 'WMT',  name: 'Walmart',            type: 'stock', shares: 15 },
-            { symbol: 'BOIL', name: 'ProShares Ultra Bloomberg Natural Gas', type: 'stock', shares: 50 },
-            { symbol: 'solana',name:'Solana',              type: 'crypto', market: 'usd', shares: 20 }
+            { symbol: 'BRK-B', name: 'Berkshire Hathaway B',       type: 'stock',  shares: 8  },
+            { symbol: 'DE',    name: 'Deere & Company',            type: 'stock',  shares: 5  },
+            { symbol: 'ACM',   name: 'AECOM Technology',           type: 'stock',  shares: 10 },  // AÑADIDO
+            { symbol: 'SPGI',  name: 'S&P Global',                 type: 'stock',  shares: 12 },
+            { symbol: 'PKG',   name: 'Packaging America',          type: 'stock',  shares: 10 },
+            { symbol: 'BLK',   name: 'BlackRock',                  type: 'stock',  shares: 7  },
+            { symbol: 'WMT',   name: 'Walmart',                    type: 'stock',  shares: 15 },
+            // RLG (Russell 1000 Growth) es un ÍNDICE y Finnhub no lo sirve; uso el ETF que lo replica:
+            { symbol: 'IWF',   name: 'Russell 1000 Growth (IWF)',  type: 'stock',  shares: 10 },  // AÑADIDO
+            { symbol: 'solana', name: 'Solana',                    type: 'crypto', market: 'usd', shares: 20 },
+            // BCOMNG (Bloomberg Natural Gas) es un ÍNDICE de Bloomberg, no disponible en APIs gratuitas.
+            // Sustituyo el ProShares 2x (BOIL) por el ETF de gas natural 1x (UNG):
+            { symbol: 'UNG',   name: 'Gas Natural (UNG)',          type: 'stock',  shares: 50 }   // SUSTITUYE A BOIL
         ];
 
         let portfolioData = {};
@@ -470,6 +477,12 @@
                     if (!portfolioData[symbol]) portfolioData[symbol] = {};
                     portfolioData[symbol].previousClose = q.pc;
                     updatePrice(symbol, q.c, q.d, q.dp);
+                } else {
+                    // Finnhub no cubre este símbolo (p. ej. índices): avisar en vez de quedar "Cargando..."
+                    const p = document.getElementById(`price-${symbol}`);
+                    const c = document.getElementById(`change-${symbol}`);
+                    if (p) p.textContent = 'N/D';
+                    if (c) { c.textContent = 'Sin datos para este símbolo en la API'; c.className = 'change'; }
                 }
             } catch (e) {
                 console.error(e);
@@ -571,13 +584,15 @@
         
         // Fuentes RSS especÃ­ficas por sÃ­mbolo
         const RSS_MAP = {
-            'PKG': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=PKG&region=US&lang=en-US',
-            'DE': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=DE&region=US&lang=en-US',
             'BRK-B': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BRK-B&region=US&lang=en-US',
+            'DE': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=DE&region=US&lang=en-US',
+            'ACM': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=ACM&region=US&lang=en-US',
             'SPGI': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=SPGI&region=US&lang=en-US',
+            'PKG': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=PKG&region=US&lang=en-US',
             'BLK': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BLK&region=US&lang=en-US',
             'WMT': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=WMT&region=US&lang=en-US',
-            'BOIL': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BOIL&region=US&lang=en-US',
+            'IWF': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=IWF&region=US&lang=en-US',
+            'UNG': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=UNG&region=US&lang=en-US',
             'solana': 'https://cryptonews-api.com/api/v1/category?section=alltickers&tickers=SOL&items=10&token=your_api_key_here'
         };
 
