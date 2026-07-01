@@ -579,8 +579,10 @@
         }
 
         /* ---------- NOTICIAS vÃ­a RSS con TRADUCCIÃ"N AUTOMÃTICA ---------- */
-        // Usamos un proxy CORS para evitar problemas de acceso
-        const RSS_PROXY = 'https://api.allorigins.win/raw?url=';
+        // ÃšNICO transporte: tu propio Cloudflare Worker (CORS + caché de borde).
+        // Despliega worker-noticias.js y AJUSTA esta URL a tu subdominio real.
+        // El Worker espera el destino en el parámetro ?url= (ya lo construimos así abajo).
+        const RSS_PROXY = 'https://cartera-noticias.esperance.workers.dev/?url=';
         
         // Fuentes RSS especÃ­ficas por sÃ­mbolo
         const RSS_MAP = {
@@ -593,7 +595,7 @@
             'WMT': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=WMT&region=US&lang=en-US',
             'IWF': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=IWF&region=US&lang=en-US',
             'UNG': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=UNG&region=US&lang=en-US',
-            'solana': 'https://cryptonews-api.com/api/v1/category?section=alltickers&tickers=SOL&items=10&token=your_api_key_here'
+            'solana': 'https://news.google.com/rss/search?q=Solana+crypto&hl=en-US&gl=US&ceid=US:en'
         };
 
         // Fuentes de cripto exclusivas para Solana
@@ -629,7 +631,14 @@
             try {
                 // Usamos el proxy CORS para evitar problemas
                 const proxyUrl = RSS_PROXY + encodeURIComponent(url);
-                const res = await fetch(proxyUrl);
+                const controller = new AbortController();
+                const to = setTimeout(() => controller.abort(), 8000);
+                let res;
+                try {
+                    res = await fetch(proxyUrl, { signal: controller.signal });
+                } finally {
+                    clearTimeout(to);
+                }
 
                 if (!res.ok) {
                     throw new Error(`Error HTTP: ${res.status}`);
@@ -688,98 +697,97 @@
             }
         }
 
-        // Función para detectar si el texto está en inglés
+        // Detecta si el texto está en inglés (para NO retraducir lo que ya está en español)
         function isEnglish(text) {
-            if (!text || text.length === 0) return false;
-            
-            // Contamos caracteres ASCII comunes en inglés
-            const englishChars = text.match(/[a-zA-Z]/g) || [];
-            const totalChars = text.length;
-            
-            // Si más del 70% de los caracteres alfabéticos son ASCII, probablemente es inglés
-            if (englishChars.length / Math.max(1, totalChars) > 0.7) {
-                return true;
-            }
-            
-            // Palabras comunes en inglés
-            const commonEnglishWords = ['the', 'and', 'for', 'with', 'this', 'that', 'from', 'which', 'company', 'market', 'stock', 'price', 'business', 'economy', 'crypto', 'blockchain', 'token', 'defi', 'nft'];
-            const lowerText = text.toLowerCase();
-            
-            for (let word of commonEnglishWords) {
-                if (lowerText.includes(word)) {
-                    return true;
-                }
-            }
-            
+            if (!text || !text.trim()) return false;
+
+            // Señales inequívocas de español -> NO traducir
+            if (/[áéíóúñ¿¡]/i.test(text)) return false;
+            const lower = ' ' + text.toLowerCase() + ' ';
+            const spanishHints = [' el ',' la ',' los ',' las ',' de ',' del ',' que ',' con ',
+                ' para ',' por ',' una ',' este ',' según ',' más ',' empresa ',' mercado ',
+                ' acción ',' acciones ',' precio ',' bolsa ',' ganancias ',' inversores '];
+            if (spanishHints.some(w => lower.includes(w))) return false;
+
+            // Señales de inglés
+            const englishHints = [' the ',' and ',' for ',' with ',' this ',' that ',' from ',
+                ' which ',' company ',' market ',' stock ',' shares ',' price ',' business ',
+                ' report ',' earnings ',' crypto ',' blockchain ',' token '];
+            if (englishHints.some(w => lower.includes(w))) return true;
+
+            // Sin señales claras: conservador -> no traducir (evita corromper español)
             return false;
         }
 
-        // Función para traducir texto usando la API de Google Translate a través de un proxy
+        // Traduce texto real EN->ES vía MyMemory (tiene CORS). Si falla, devuelve el original.
         async function translateText(text, targetLang = 'es') {
-            if (!text || text.trim() === '') return text;
-            
+            if (!text || !text.trim()) return text;
+            const controller = new AbortController();
+            const to = setTimeout(() => controller.abort(), 6000);
             try {
-                // Usamos un servicio de traducción gratuito a través de un proxy
-                const translateUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
-                const response = await fetch(translateUrl);
-                const data = await response.json();
-                
-                if (data && data.responseData && data.responseData.translatedText) {
-                    return data.responseData.translatedText;
-                } else {
-                    // Fallback: si la API principal falla, intentamos con otro servicio
-                    const fallbackUrl = `https://libretranslate.de/translate`;
-                    const fallbackResponse = await fetch(fallbackUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            q: text,
-                            source: 'en',
-                            target: targetLang,
-                            format: 'text'
-                        })
-                    });
-                    
-                    const fallbackData = await fallbackResponse.json();
-                    if (fallbackData.translatedText) {
-                        return fallbackData.translatedText;
-                    }
-                }
-                
-                // Si todo falla, devolvemos el texto original
+                const u = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
+                const r = await fetch(u, { signal: controller.signal });
+                const d = await r.json();
+                const out = d && d.responseData && d.responseData.translatedText;
+                // MyMemory devuelve avisos en mayúsculas cuando agota cuota o falla
+                if (out && !/MYMEMORY WARNING|QUERY LENGTH|QUOTA|INVALID/i.test(out)) return out;
                 return text;
             } catch (e) {
-                console.error("Error en la traducción:", e);
-                return text; // Devolvemos el texto original si falla la traducción
+                return text; // Nunca inventamos: se conserva el titular real original
+            } finally {
+                clearTimeout(to);
             }
         }
 
-        // Función para traducir todas las noticias de un símbolo
-        async function translateNewsItems(items) {
-            const translatedItems = [];
-            
-            for (let item of items) {
-                try {
-                    // Verificamos si el título o la descripción necesitan traducción
-                    const needsTranslation = isEnglish(item.title) || isEnglish(item.desc);
-                    
-                    if (needsTranslation) {
-                        // Traducimos título y descripción
-                        item.title = await translateText(item.title);
-                        item.desc = await translateText(item.desc);
-                    }
-                    
-                    translatedItems.push(item);
-                } catch (e) {
-                    console.error("Error traduciendo noticia:", e);
-                    // Si falla la traducción de un elemento, lo dejamos en su forma original
-                    translatedItems.push(item);
+        // Escapa HTML para insertar texto de feeds de forma segura
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        // Ejecuta tareas asíncronas con concurrencia limitada (evita saturar la API de traducción)
+        async function runPool(tasks, limit = 4) {
+            const queue = tasks.slice();
+            const workers = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+                while (queue.length) {
+                    const task = queue.shift();
+                    try { await task(); } catch (e) { /* se conserva el original */ }
                 }
-            }
-            
-            return translatedItems;
+            });
+            await Promise.all(workers);
+        }
+
+        // Render PROGRESIVO: pinta las noticias reales de inmediato y traduce en segundo plano.
+        // Si la traducción falla o no llega, permanece el titular real original (nunca inventado).
+        function renderNewsItems(container, items) {
+            container.innerHTML = items.map((it, i) => `
+                <article data-idx="${i}">
+                    <h3>
+                        <a href="${escapeHtml(it.link)}" target="_blank" rel="noopener" data-role="title">${escapeHtml(it.title)}</a>
+                        ${it.source ? `<span class="news-source">${escapeHtml(it.source)}</span>` : ''}
+                    </h3>
+                    <p data-role="desc">${escapeHtml(it.desc)}</p>
+                    <small><i class="fas fa-clock"></i> ${it.date.toLocaleString('es-ES')}</small>
+                </article>
+            `).join('');
+
+            const tasks = items.map((it, i) => async () => {
+                if (!(isEnglish(it.title) || isEnglish(it.desc))) return;
+                const [t, d] = await Promise.all([
+                    translateText(it.title),
+                    translateText(it.desc)
+                ]);
+                const art = container.querySelector(`article[data-idx="${i}"]`);
+                if (!art) return;
+                const a = art.querySelector('[data-role="title"]');
+                if (a && t) a.textContent = t;
+                const p = art.querySelector('[data-role="desc"]');
+                if (p && d) p.textContent = d;
+            });
+
+            // No await: el usuario ya ve las noticias; la traducción se aplica al vuelo.
+            runPool(tasks, 4);
         }
 
         window.toggleNews = async function (symbol) {
@@ -901,20 +909,8 @@
                         return;
                     }
 
-                    // Traducimos las noticias si están en inglés
-                    allItems = await translateNewsItems(allItems);
-
-                    // Renderizamos las noticias traducidas
-                    container.innerHTML = allItems.map(it => `
-                        <article>
-                            <h3>
-                                <a href="${it.link}" target="_blank" rel="noopener">${it.title}</a>
-                                ${it.source ? `<span class="news-source">${it.source}</span>` : ''}
-                            </h3>
-                            <p>${it.desc}</p>
-                            <small><i class="fas fa-clock"></i> ${it.date.toLocaleString('es-ES')}</small>
-                        </article>
-                    `).join('');
+                    // Render inmediato de noticias REALES + traducción progresiva en segundo plano
+                    renderNewsItems(container, allItems);
                     
                 } catch (e) {
                     console.error(`Error cargando noticias para ${symbol}:`, e);
@@ -985,20 +981,8 @@
                         return;
                     }
 
-                    // Traducimos las noticias si están en inglés
-                    allNews = await translateNewsItems(allNews);
-
-                    // Renderizamos las noticias traducidas
-                    container.innerHTML = allNews.map(item => `
-                        <article>
-                            <h3>
-                                <a href="${item.link}" target="_blank" rel="noopener">${item.title}</a>
-                                <span class="news-source">${item.source}</span>
-                            </h3>
-                            <p>${item.desc}</p>
-                            <small><i class="fas fa-clock"></i> ${item.date.toLocaleString('es-ES')}</small>
-                        </article>
-                    `).join('');
+                    // Render inmediato de noticias REALES + traducción progresiva en segundo plano
+                    renderNewsItems(container, allNews);
                     
                 } catch (e) {
                     console.error('Error cargando noticias generales:', e);
