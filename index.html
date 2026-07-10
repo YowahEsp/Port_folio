@@ -424,9 +424,9 @@
             // RLG (Russell 1000 Growth) es un ÍNDICE y Finnhub no lo sirve; uso el ETF que lo replica:
             { symbol: 'IWF',   name: 'Russell 1000 Growth (IWF)',  type: 'stock',  shares: 10 },  // AÑADIDO
             { symbol: 'solana', name: 'Solana',                    type: 'crypto', market: 'usd', shares: 20 },
-            // BCOMNG (Bloomberg Natural Gas) es un ÍNDICE de Bloomberg, no disponible en APIs gratuitas.
-            // Sustituyo el ProShares 2x (BOIL) por el ETF de gas natural 1x (UNG):
-            { symbol: 'UNG',   name: 'Gas Natural (UNG)',          type: 'stock',  shares: 50 }   // SUSTITUYE A BOIL
+            // Union Pacific (UNP): fusión pendiente con Norfolk Southern (anunciada 07/2025, en revisión
+            // de la STB, cierre estimado a mediados de 2027) — de momento cotiza normal como UNP.
+            { symbol: 'UNP',   name: 'Union Pacific',               type: 'stock',  shares: 1  }   // AJUSTA a tus acciones reales
         ];
 
         let portfolioData = {};
@@ -596,8 +596,8 @@
             'BLK': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BLK&region=US&lang=en-US',
             'WMT': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=WMT&region=US&lang=en-US',
             'IWF': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=IWF&region=US&lang=en-US',
-            'UNG': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=UNG&region=US&lang=en-US',
-            'solana': 'https://news.google.com/rss/search?q=Solana+crypto&hl=en-US&gl=US&ceid=US:en'
+            'solana': 'https://news.google.com/rss/search?q=Solana+crypto&hl=en-US&gl=US&ceid=US:en',
+            'UNP': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=UNP&region=US&lang=en-US'
         };
 
         // Fuentes de cripto exclusivas para Solana
