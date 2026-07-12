@@ -1,1000 +1,733 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"/>
-    <title>Portfolio Tracker — Tiempo Real</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
-        :root {
-            --bg-color: #1a1a2e;
-            --card-bg: #16213e;
-            --primary-text: #e0e0e0;
-            --secondary-text: #a0a0a0;
-            --positive-color: #2ecc71;
-            --negative-color: #e74c3c;
-            --accent-color: #0f3460;
-            --border-color: #5372f0;
-            --news-bg: #f8faff;
-            --news-text: #1e3a8a;
-            --news-title: #1d4ed8;
-            --news-summary: #374151;
-            --news-date: #6b7280;
-            --news-border: #e5e7eb;
-            --news-hover: #eff6ff;
-        }
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--primary-text);
-            margin: 0;
-            padding: 20px;
-        }
-        header {
-            background-color: var(--card-bg);
-            padding: 15px 30px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border-left: 5px solid var(--border-color);
-        }
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .logo {
-            font-size: 1.5em;
-            font-weight: 700;
-        }
-        .last-update {
-            font-size: 0.9em;
-            color: var(--secondary-text);
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .summary-card {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .summary-card h3 {
-            margin: 0 0 10px;
-            font-size: 0.9em;
-            color: var(--secondary-text);
-            text-transform: uppercase;
-        }
-        .summary-value {
-            font-size: 2em;
-            font-weight: 700;
-        }
-        .summary-positive { color: var(--positive-color); }
-        .summary-negative { color: var(--negative-color); }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-        }
-        .card {
-            background: var(--card-bg);
-            border-radius: 10px;
-            padding: 20px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            border: 1px solid var(--accent-color);
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 15px;
-        }
-        .ticker-name { font-size: 1.5em; font-weight: 700; }
-        .ticker-symbol { font-size: 0.9em; color: var(--secondary-text); }
-        .price { font-size: 2.2em; font-weight: 700; margin-bottom: 10px; }
-        .change { font-size: 1.2em; }
-        .change.positive { color: var(--positive-color); }
-        .change.negative { color: var(--negative-color); }
-        .refresh-btn {
-            display: block;
-            margin: 30px auto;
-            padding: 12px 25px;
-            background-color: var(--border-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.2s;
-        }
-        .refresh-btn:hover { background-color: #3a5fcd; }
-        .refresh-btn .fa-sync-alt { margin-right: 8px; }
-        .last-updated { text-align: center; color: var(--secondary-text); font-size: 0.9em; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Fondos</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #080c14;
+  --surface: #111827;
+  --surf2:   #1b2337;
+  --border:  #1e2d45;
+  --text:    #e2e8f0;
+  --muted:   #64748b;
+  --accent:  #3b82f6;
+  --pos:     #10b981;
+  --neg:     #ef4444;
+  --pos-bg:  rgba(16,185,129,.12);
+  --neg-bg:  rgba(239,68,68,.12);
+  --warn:    #f59e0b;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+/* ── CABECERA ────────────────────────────── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.title-block { flex: 1; min-width: 180px; }
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -.4px;
+  color: #fff;
+}
+h1 em { color: var(--accent); font-style: normal; }
+#last-update {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+#progress {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: background .2s, transform .1s;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: #2563eb; }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:disabled { background: var(--muted); cursor: not-allowed; }
+.spin { display: inline-block; font-size: 15px; line-height: 1; }
+.spin.go { animation: giro 1s linear infinite; }
+@keyframes giro { to { transform: rotate(360deg); } }
+/* ── CONTENIDO ────────────────────────────── */
+main { padding: 24px 28px; max-width: 1180px; margin: 0 auto; }
+/* ── TABLA ────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  overflow-x: auto;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { background: var(--surf2); }
+th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+th.r { text-align: right; }
+td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+.clickable:hover td { background: rgba(255,255,255,.025); cursor: pointer; }
+/* ── CELDAS ─────────────────────────────── */
+.c-name { font-weight: 500; color: #e2e8f0; max-width: 280px; }
+.c-name small { display: block; font-size: 10.5px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+.c-isin  { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+.c-fecha { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted); }
+.c-nav   { font-family: 'JetBrains Mono', monospace; font-size: 13.5px; font-weight: 600; text-align: right; }
+.c-pct   { text-align: right; white-space: nowrap; }
+.pill {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 5px;
+}
+.pill.pos { color: var(--pos); background: var(--pos-bg); }
+.pill.neg { color: var(--neg); background: var(--neg-bg); }
+.pill.neu { color: var(--muted); }
+.badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--surf2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+/* ── SEPARADOR DE CATEGORÍA ──────────────── */
+.row-sep td {
+  background: var(--surf2);
+  color: var(--accent);
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  padding: 9px 16px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.row-sep:hover td { background: var(--surf2); cursor: default; }
+/* ── ESTADOS ─────────────────────────────── */
+@keyframes shimmer { 0%,100%{opacity:.35} 50%{opacity:.85} }
+.sh { animation: shimmer 1.5s ease-in-out infinite; color: var(--muted); }
+@keyframes fadeSlide { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+.row-ok td { animation: fadeSlide .3s ease forwards; }
+.row-err .c-err { font-size: 10.5px; color: var(--warn); }
+.row-block { opacity: .5; }
+/* ── NOTAS ────────────────────────────────── */
+.notes {
+  margin-top: 14px;
+  font-size: 11.5px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 2px;
+  line-height: 1.5;
+}
+.notes b { color: var(--text); }
+/* ── MÓVIL: TABLA → TARJETAS ──────────────── */
+@media(max-width:640px) {
+  main { padding: 14px; }
+  header { padding: 14px; }
 
-        /* Estilos para noticias */
-        .news-toggle-btn {
-            background: var(--accent-color);
-            color: var(--primary-text);
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 15px;
-            text-align: left;
-        }
-        .news-toggle-btn.open { background-color: var(--border-color); }
-        .news-container {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
-            margin-top: 10px;
-            background-color: var(--news-bg);
-            border-radius: 8px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .news-container.open {
-            max-height: 600px;
-            overflow-y: auto;
-            padding: 15px;
-            border: 1px solid var(--news-border);
-        }
-        .news-container article {
-            border-bottom: 1px solid var(--news-border);
-            padding: 16px 0;
-            transition: background-color 0.2s ease;
-        }
-        .news-container article:last-child { border-bottom: none; }
-        .news-container article:hover { background-color: var(--news-hover); }
-        .news-container h3 { 
-            font-size: 1.1em; 
-            margin: 0 0 8px; 
-            line-height: 1.4;
-            font-weight: 600;
-        }
-        .news-container h3 a {
-            color: var(--news-title);
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-        .news-container h3 a:hover {
-            color: #1e40af;
-            text-decoration: underline;
-        }
-        .news-container p { 
-            font-size: 0.95em; 
-            margin: 0 0 10px; 
-            color: var(--news-summary);
-            line-height: 1.5;
-        }
-        .news-container small { 
-            font-size: 0.85em; 
-            color: var(--news-date);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-        .news-container small i { font-size: 0.8em; }
-        .news-source {
-            font-size: 0.8em;
-            background-color: #dbeafe;
-            color: #1e40af;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-            margin-left: 5px;
-        }
+  .card { overflow-x: visible; border: none; background: transparent; }
+  table { font-size: 13.5px; }
+  thead { display: none; }            /* se sustituye por las etiquetas de cada celda */
 
-        .loading, .error, .no-news { 
-            padding: 30px 20px; 
-            text-align: center;
-            color: var(--news-text);
-            background-color: var(--news-bg);
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-weight: 500;
-        }
-        .error {
-            color: #dc2626;
-            background-color: #fef2f2;
-        }
-        .no-news {
-            color: var(--news-date);
-            font-style: italic;
-        }
-        .fa-spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  table, tbody { display: block; width: 100%; }
 
-        .footer-heart {
-            text-align: center;
-            margin: 30px 0 10px;
-            font-size: 1.1em;
-            color: var(--secondary-text);
-        }
-        .heart {
-            display: inline-block;
-            position: relative;
-            color: #ff4757;
-            font-size: 1.4em;
-            animation: heartbeat 1.2s infinite;
-            transform-origin: center;
-        }
-        @keyframes heartbeat {
-            0%   { transform: scale(1); }
-            14%  { transform: scale(1.3); }
-            28%  { transform: scale(1); }
-            42%  { transform: scale(1.3); }
-            70%  { transform: scale(1); }
-        }
-        
-        /* Estilo para indicar traducciÃ³n en progreso */
-        .translating {
-            opacity: 0.7;
-        }
-        
-        /* SecciÃ³n de noticias generales - CORREGIDO PARA USAR LOS MISMOS ESTILOS */
-        .general-news-section {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: var(--card-bg);
-            border-radius: 10px;
-            border-left: 4px solid var(--border-color);
-        }
-        .general-news-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .general-news-toggle {
-            background: var(--accent-color);
-            color: var(--primary-text);
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .general-news-toggle.open {
-            background-color: var(--border-color);
-        }
-        /* AQUÃ ESTÃ EL CAMBIO PRINCIPAL - usar los mismos estilos que .news-container */
-        .general-news-container {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
-            margin-top: 10px;
-            background-color: var(--news-bg);
-            border-radius: 8px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .general-news-container.open {
-            max-height: 800px;
-            overflow-y: auto;
-            padding: 15px;
-            border: 1px solid var(--news-border);
-        }
-        /* Aplicar los mismos estilos de artÃ­culos que en .news-container */
-        .general-news-container article {
-            border-bottom: 1px solid var(--news-border);
-            padding: 16px 0;
-            transition: background-color 0.2s ease;
-        }
-        .general-news-container article:last-child { border-bottom: none; }
-        .general-news-container article:hover { background-color: var(--news-hover); }
-        .general-news-container h3 { 
-            font-size: 1.1em; 
-            margin: 0 0 8px; 
-            line-height: 1.4;
-            font-weight: 600;
-        }
-        .general-news-container h3 a {
-            color: var(--news-title);
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-        .general-news-container h3 a:hover {
-            color: #1e40af;
-            text-decoration: underline;
-        }
-        .general-news-container p { 
-            font-size: 0.95em; 
-            margin: 0 0 10px; 
-            color: var(--news-summary);
-            line-height: 1.5;
-        }
-        .general-news-container small { 
-            font-size: 0.85em; 
-            color: var(--news-date);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-        .general-news-container small i { font-size: 0.8em; }
-        /* Aplicar los mismos estilos de carga/error que en .news-container */
-        .general-news-container .loading, 
-        .general-news-container .error, 
-        .general-news-container .no-news { 
-            padding: 30px 20px; 
-            text-align: center;
-            color: var(--news-text);
-            background-color: var(--news-bg);
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        .general-news-container .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-weight: 500;
-        }
-        .general-news-container .error {
-            color: #dc2626;
-            background-color: #fef2f2;
-        }
-        .general-news-container .no-news {
-            color: var(--news-date);
-            font-style: italic;
-        }
-        .general-news-title {
-            font-size: 1.3em;
-            margin: 0;
-            color: var(--primary-text);
-        }
-    </style>
+  /* cada fila de datos pasa a ser una tarjeta */
+  tr.clickable, tr.row-ok, tr.row-err, tr.row-block {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  tr:last-child td { border-bottom: 1px solid var(--border); }
+
+  td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+  }
+  td:last-child { border-bottom: none; }
+  td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+  }
+
+  /* primera celda = cabecera de la tarjeta (nombre del fondo a ancho completo) */
+  td.c-name {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    text-align: left;
+    background: var(--surf2);
+    max-width: none;
+    font-size: 14px;
+  }
+  td.c-name small { margin-top: 0; }
+
+  .c-nav, .c-pct { text-align: right; }
+  .pill { font-size: 12.5px; }
+
+  /* separador de categoría: a ancho completo, sin etiqueta */
+  tr.row-sep { display: block; margin: 4px 0 12px; }
+  .row-sep td {
+    display: block;
+    text-align: center;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+  }
+  .row-sep td::before { content: none; }
+}
+</style>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <div class="logo"><i class="fas fa-chart-line"></i> Portfolio Tracker</div>
-            <div class="last-update"><i class="fas fa-sync-alt"></i> Actualizado: <span id="update-time">--:--:--</span></div>
-        </div>
-    </header>
+<header>
+  <div class="title-block">
+    <h1>Monitor de <em>Fondos</em></h1>
+    <div id="last-update">Abriendo…</div>
+  </div>
+  <div id="progress"></div>
+  <button class="btn" id="btnRef" onclick="iniciar()">
+    <span class="spin" id="ico">⟳</span> Actualizar
+  </button>
+</header>
 
-    <div class="container">
-        <div class="summary-cards">
-            <div class="summary-card">
-                <h3>VALOR TOTAL</h3>
-                <div class="summary-value" id="total-value">$---</div>
-            </div>
-            <div class="summary-card">
-                <h3>GANANCIAS DEL DÍA</h3>
-                <div class="summary-value" id="day-gain">+$---</div>
-            </div>
-            <div class="summary-card">
-                <h3>CAMBIOS POSITIVOS</h3>
-                <div class="summary-value" id="positive-changes">--/--</div>
-            </div>
-        </div>
-        <div class="grid" id="grid"></div>
-        
-        <div class="general-news-section">
-            <div class="general-news-header">
-                <h2 class="general-news-title">Noticias Generales de Mercados</h2>
-                <button class="general-news-toggle" onclick="toggleGeneralNews()">
-                    <i class="fas fa-chevron-down"></i> Ver noticias internacionales
-                </button>
-            </div>
-            <div class="general-news-container" id="general-news-container"></div>
-        </div>
-        
-        <button class="refresh-btn" onclick="loadPrices()"><i class="fas fa-sync-alt"></i> Actualizar ahora</button>
-        <div class="last-updated">Los datos se actualizan en tiempo real vÃ­a WebSocket</div>
-        <div class="footer-heart">
-            DESARROLLADO CON <span class="heart"><i class="fas fa-heart"></i></span> PARA INVERSORES.
-        </div>
-    </div>
+<main>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Fondo</th>
+          <th>ISIN</th>
+          <th>Fecha NAV</th>
+          <th class="r">NAV</th>
+          <th class="r">Var. %</th>
+          <th>Fuente</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="notes" id="notes"></div>
+</main>
 
-    <script>
-        /* ---------- CONFIGURACIÃ"N ---------- */
-        const API_KEY_FINNHUB = 'd2s66m1r01qiq7a2qqhgd2s66m1r01qiq7a2qqi0';
+<script>
+// ── FONDOS ────────────────────────────────────────────────────────────────────
+const FONDOS = [
+  { url: "https://markets.ft.com/data/funds/tearsheet/summary?s=ES0146309002:EUR" },
+  { url: "https://markets.ft.com/data/funds/tearsheet/summary?s=ES0119199000:EUR" },
+  { url: "https://markets.ft.com/data/funds/tearsheet/summary?s=ES0112611001:EUR" },
+  { url: "https://markets.ft.com/data/funds/tearsheet/summary?s=IE00BH6XSF26:EUR" },
+  { url: "https://www.fundsquare.net/security/price?idInstr=6048" },
+  { url: "https://www.avl-investmentfonds.de/fonds/details/LU2338974699" },
+  { url: "https://www.avl-investmentfonds.de/fonds/details/IE00BK5TW727" },
+  { url: "https://markets.ft.com/data/funds/tearsheet/summary?s=IE0031574647:EUR" },
+  { url: "https://markets.ft.com/data/funds/tearsheet/summary?s=LU0147943442:EUR" },
+  { url: "https://www.fundsquare.net/security/summary?idInstr=322835" },
+  { url: "https://www.fundsquare.net/security/summary?idInstr=5948" },
+  { url: "https://www.fundsquare.net/security/price?idInstr=117231" },
+  { url: "https://www.avl-investmentfonds.de/fonds/details/LU0757431738" },
+  { url: "https://markets.ft.com/data/funds/tearsheet/summary?s=IE00BGHQF524:EUR" },
+  { url: "https://markets.ft.com/data/funds/tearsheet/summary?s=IE00BDR0JY05:EUR" },
+  { url: "https://es.investing.com/funds/azvalor-global-value-pp" },
 
-        // AJUSTA el campo "shares" (participaciones) de cada posición a las tuyas reales:
-        // el valor total de la cartera se calcula como shares × precio.
-        const tickers = [
-            { symbol: 'BRK-B', name: 'Berkshire Hathaway B',       type: 'stock',  shares: 8  },
-            { symbol: 'DE',    name: 'Deere & Company',            type: 'stock',  shares: 5  },
-            { symbol: 'ACM',   name: 'AECOM Technology',           type: 'stock',  shares: 10 },  // AÑADIDO
-            { symbol: 'SPGI',  name: 'S&P Global',                 type: 'stock',  shares: 12 },
-            { symbol: 'MBGL',  name: 'Mobility Global',            type: 'stock',  shares: 12 }, // AÑADIDO — spin-off de SPGI (1:1 ratio, 01/07/2026)
-            { symbol: 'PKG',   name: 'Packaging America',          type: 'stock',  shares: 10 },
-            { symbol: 'BLK',   name: 'BlackRock',                  type: 'stock',  shares: 7  },
-            { symbol: 'WMT',   name: 'Walmart',                    type: 'stock',  shares: 15 },
-            // RLG (Russell 1000 Growth) es un ÍNDICE y Finnhub no lo sirve; uso el ETF que lo replica:
-            { symbol: 'IWF',   name: 'Russell 1000 Growth (IWF)',  type: 'stock',  shares: 10 },  // AÑADIDO
-            { symbol: 'solana', name: 'Solana',                    type: 'crypto', market: 'usd', shares: 20 },
-            // Union Pacific (UNP): fusión pendiente con Norfolk Southern (anunciada 07/2025, en revisión
-            // de la STB, cierre estimado a mediados de 2027) — de momento cotiza normal como UNP.
-            { symbol: 'UNP',   name: 'Union Pacific',               type: 'stock',  shares: 1  }   // AJUSTA a tus acciones reales
-        ];
+  // ── De interés ──────────────────────────────────────────────────────────────
+  { separador: true, titulo: "De interés" },
+  { url: "https://www.fundsquare.net/security/summary?idInstr=268050" },
+  { url: "https://www.fundsquare.net/security/summary?idInstr=233106" },
+];
 
-        let portfolioData = {};
+// ── PROXIES ───────────────────────────────────────────────────────────────────
+// Estado real a jun-2026 (comprobado en consola): de los proxies públicos solo
+// corsproxy.io responde con CORS válido, y SOLO desde *.github.io. codetabs da
+// HTTP 400; allorigins y cors.x2u.in ya no mandan Access-Control-Allow-Origin.
+// → La única vía robusta (y la ÚNICA que funciona desde Codeberg) es un proxy
+//   propio. Pega abajo la URL de tu Worker y pasará a ser el proxy prioritario.
 
-        /* ---------- RENDER INICIAL ---------- */
-        document.addEventListener('DOMContentLoaded', () => {
-            renderGrid();
-            loadPrices();
-            setupStockRealtimeUpdates();
-            setupCryptoRealtimeUpdates();
-        });
+// ⬇️⬇️⬇️  PEGA AQUÍ TU PROXY PROPIO (Cloudflare Worker / Deno Deploy).  ⬇️⬇️⬇️
+//   Debe terminar de forma que se le pueda añadir la URL destino ya codificada.
+//   Ej.: "https://monitor-fondos.TUUSUARIO.workers.dev/?url="
+//   Déjalo "" si todavía no lo has desplegado.
+const PROXY_PROPIO = "https://monitor-fondos.esperance.workers.dev/?url=";
+// ⬆️⬆️⬆️ ─────────────────────────────────────────────────────────────── ⬆️⬆️⬆️
 
-        function renderGrid() {
-            const grid = document.getElementById('grid');
-            grid.innerHTML = tickers.map(t => `
-                <div class="card" id="card-${t.symbol}">
-                    <div class="card-header">
-                        <div>
-                            <div class="ticker-name">${t.name}</div>
-                            <div class="ticker-symbol">${t.symbol} ${t.type==='crypto'?`(${t.market})`:''}</div>
-                        </div>
-                        <div class="ticker-type">${t.type==='stock'?'<i class="fas fa-building"></i>':'<i class="fab fa-bitcoin"></i>'}</div>
-                    </div>
-                    <div class="price" id="price-${t.symbol}">Cargando...</div>
-                    <div class="change" id="change-${t.symbol}"></div>
-                    <button class="news-toggle-btn" onclick="toggleNews('${t.symbol}')">
-                        <i class="fas fa-chevron-down"></i> Ver noticias
-                    </button>
-                    <div class="news-container" id="news-${t.symbol}"></div>
-                </div>`).join('');
-        }
+const _PROPIO = PROXY_PROPIO
+  ? [{ name:"propio", json:false, url: u => PROXY_PROPIO + encodeURIComponent(u) }]
+  : [];
+const _CORSPROXY = { name:"corsproxy", json:false, url: u => `https://corsproxy.io/?url=${encodeURIComponent(u)}` };
+const _BASE = [   // respaldos públicos: hoy casi todos rotos, se dejan por si reviven
+  { name:"codetabs",   json:false, url: u => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}` },
+  { name:"allorigins", json:false, url: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
+  { name:"x2u",        json:false, url: u => `https://cors.x2u.in/${u}`                                   },
+  { name:"allo-json",  json:true,  url: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}` },
+];
+const _H = location.hostname;
+const _CORSPROXY_OK = /(^|\.)github\.io$/i.test(_H) || _H === "localhost" || _H === "127.0.0.1";
+// Orden: proxy propio (si existe) → corsproxy.io (solo en github.io) → respaldos.
+const PROXIES = [ ..._PROPIO, ...(_CORSPROXY_OK ? [_CORSPROXY] : []), ..._BASE ];
+const HAY_PROPIO = _PROPIO.length > 0;
 
-        /* ---------- PRECIOS (Finnhub + CoinGecko) ---------- */
-        async function loadPrices() {
-            await Promise.all(tickers.map(t =>
-                t.type === 'stock' ? fetchStockPrice(t.symbol) : fetchCryptoPrice(t.symbol, t.market)
-            ));
-            updateSummary();
-            document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
-        }
+// Detecta respuestas-basura: muros anti-bot (FT/Cloudflare/Akamai), captchas,
+// avisos de rate-limit del proxy, o cuerpos truncados. Devolver esto al parser
+// daba el engañoso "estructura cambiada" cuando en realidad era un bloqueo.
+function pareceValido(html) {
+  if (!html || html.length < 800) return false;          // demasiado corto = interstitial/error
+  const cab = html.slice(0, 4000).toLowerCase();
+  const trampas = [
+    "pardon our interruption", "attention required", "request unsuccessful",
+    "are you a human", "captcha", "access denied", "akamai",
+    "rate limit", "too many requests", "enable javascript and cookies"
+  ];
+  if (trampas.some(t => cab.includes(t))) return false;
+  return true;
+}
 
-        async function fetchStockPrice(symbol) {
-            const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY_FINNHUB}`;
-            try {
-                const response = await fetch(url);
-                const q = await response.json();
-                if (q.c) {
-                    // Guardar el precio de cierre anterior para calcular cambios en tiempo real
-                    if (!portfolioData[symbol]) portfolioData[symbol] = {};
-                    portfolioData[symbol].previousClose = q.pc;
-                    updatePrice(symbol, q.c, q.d, q.dp);
-                } else {
-                    // Finnhub no cubre este símbolo (p. ej. índices): avisar en vez de quedar "Cargando..."
-                    const p = document.getElementById(`price-${symbol}`);
-                    const c = document.getElementById(`change-${symbol}`);
-                    if (p) p.textContent = 'N/D';
-                    if (c) { c.textContent = 'Sin datos para este símbolo en la API'; c.className = 'change'; }
-                }
-            } catch (e) {
-                console.error(e);
-                document.getElementById(`price-${symbol}`).textContent = 'Error';
-            }
-        }
+// startIdx = proxy por el que empieza este fondo (rotación). Recorre TODOS.
+async function fetchHTML(url, startIdx = 0) {
+  const n = PROXIES.length;
+  let ultimoFallo = "sin respuesta de ningún proxy";
+  for (let k = 0; k < n; k++) {
+    const px = PROXIES[(startIdx + k) % n];
+    try {
+      const r = await fetch(px.url(url), { signal: AbortSignal.timeout(15000) });
+      if (!r.ok) { ultimoFallo = px.name + " HTTP " + r.status; continue; }
+      let html = "";
+      if (px.json) {
+        const d = await r.json();
+        html = (d && d.contents) ? d.contents : "";
+      } else {
+        html = await r.text();
+      }
+      if (pareceValido(html)) return html;                // ← contenido real
+      ultimoFallo = px.name + " (bloqueo/anti-bot)";      // si no, siguiente proxy
+    } catch(_) { ultimoFallo = px.name + " (timeout/red)"; }
+  }
+  const e = new Error("BLOQUEO"); e.detalle = ultimoFallo; throw e;
+}
 
-        async function fetchCryptoPrice(symbol, market) {
-            try {
-                const url = `https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=${market}&include_24hr_change=true`;
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data[symbol]) {
-                    const p = data[symbol][market];
-                    const ch = data[symbol][`${market}_24h_change`] || 0;
-                    const chAmt = p - (p / (1 + ch / 100));
-                    updatePrice(symbol, p, chAmt, ch);
-                }
-            } catch (e) {
-                console.error(e);
-                document.getElementById(`price-${symbol}`).textContent = 'Error';
-            }
-        }
+// ── PARSERS ────────────────────────────────────────────────────────────────────
+const ISIN_RE = /\b([A-Z]{2}[A-Z0-9]{9}\d)\b/;
 
-        function updatePrice(symbol, price, change, changePercent) {
-            const priceEl = document.getElementById(`price-${symbol}`);
-            const changeEl = document.getElementById(`change-${symbol}`);
-            if (!priceEl || !changeEl) return;
+/* Fundsquare. Lee el NAV venga como venga:
+   - páginas /security/price Y /security/summary
+   - mercado abierto ("Last NAV …") o festivo/cerrado ("Previous NAV …")
+   Estrategia: localizar en el texto el primer bloque "fecha precio DIVISA ±%".
+   En ambos casos ese primer match es el dato bueno (Last NAV si lo hay, si no
+   Previous NAV). Si fallara, se recurre al método antiguo por celdas <td>. */
+function parseFundsquare(html, url) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
 
-            priceEl.textContent = `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
-            const sign = change >= 0 ? '+' : '';
-            changeEl.innerHTML = `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
-            changeEl.className = `change ${change >= 0 ? 'positive' : 'negative'}`;
+  // OJO: el textContent crudo concatena el contenido de celdas contiguas SIN
+  // espacios (…</td><td>… no separa), así que la fecha y el precio llegaban
+  // pegados ("22/06/2026289.49") y el patrón no los reconocía. Insertamos un
+  // separador al final de cada celda/bloque para que queden sueltos.
+  doc.querySelectorAll("td, th, tr, br, p, li, div").forEach(el => el.append(" "));
+  const txt = doc.body.textContent.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
 
-            const cfg = tickers.find(t => t.symbol === symbol);
-            if (!portfolioData[symbol]) portfolioData[symbol] = {};
-            Object.assign(portfolioData[symbol], { price, change, shares: cfg.shares });
-        }
+  // ISIN: primer código del cuerpo (respaldo: pista de la URL).
+  const isinM = txt.match(ISIN_RE);
+  const isin  = isinM ? isinM[1] : (isinHint(url) || "?");
 
-        function updateSummary() {
-            let tv = 0, td = 0, pm = 0;
-            Object.values(portfolioData).forEach(d => {
-                if (d.price && d.shares) {
-                    tv += d.price * d.shares;
-                    td += d.change * d.shares;
-                    if (d.change > 0) pm++;
-                }
-            });
-            document.getElementById('total-value').textContent = `$${tv.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-            const dayEl = document.getElementById('day-gain');
-            dayEl.textContent = `${td >= 0 ? '+' : ''}$${td.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-            dayEl.className = `summary-value ${td >= 0 ? 'summary-positive' : 'summary-negative'}`;
-            document.getElementById('positive-changes').textContent = `${pm}/${tickers.length}`;
-        }
+  // Nombre: texto tras el ISIN hasta el primer marcador conocido.
+  let nombre = isin;
+  if (isinM) {
+    const after = txt.slice(isinM.index + isinM[1].length);
+    const corte = after.search(/Last NAV|Previous NAV|NAV calc|Documents|Overview|Add to|Open glossary/i);
+    nombre = after.slice(0, corte > 0 ? corte : 120).replace(/\s+/g, " ").trim() || isin;
+  }
 
-        /* ---------- WEBSOCKETS ---------- */
-        function setupStockRealtimeUpdates() {
-            const ws = new WebSocket(`wss://ws.finnhub.io?token=${API_KEY_FINNHUB}`);
-            ws.addEventListener('open', () => {
-                tickers.filter(t => t.type === 'stock').forEach(t => {
-                    ws.send(JSON.stringify({ type: 'subscribe', symbol: t.symbol }));
-                });
-            });
-            
-            ws.addEventListener('message', e => {
-                const m = JSON.parse(e.data);
-                if (m.type === 'trade' && m.data) {
-                    m.data.forEach(tr => {
-                        const d = portfolioData[tr.s];
-                        if (d && d.previousClose) {
-                            const ch = tr.p - d.previousClose;
-                            const chP = (ch / d.previousClose) * 100;
-                            updatePrice(tr.s, tr.p, ch, chP);
-                            updateSummary();
-                            document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
-                        }
-                    });
-                }
-            });
-            ws.addEventListener('error', console.error);
-            ws.addEventListener('close', () => console.log('Finnhub WS cerrado'));
-        }
+  // Método 1 (texto): primer "DD/MM/YYYY precio DIVISA ±cambio %".
+  // Espaciado tolerante (\s*) por si alguna celda no quedó separada.
+  // El primer match es el dato bueno: Last NAV si lo hay, si no Previous NAV.
+  const m = txt.match(/(\d{2}\/\d{2}\/\d{4})\s*([\d.,]+)\s*([A-Z]{3})\s*([-+]?\d+(?:[.,]\d+)?)\s*%/);
+  if (m) {
+    return { isin, nombre, fecha: m[1],
+      nav: m[2].replace(/,/g, ""),            // formato anglosajón: quitar comas de miles
+      var_pct: m[4].replace(",", ".") + "%",
+      divisa: m[3], fuente: "Fundsquare" };
+  }
 
-        function setupCryptoRealtimeUpdates() {
-            const ws = new WebSocket('wss://stream.binance.com:9443/ws/solusdt@ticker');
-            ws.onmessage = e => {
-                const d = JSON.parse(e.data);
-                updatePrice('solana', +d.c, +d.p, +d.P);
-                updateSummary();
-                document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
-            };
-            ws.onerror = console.error;
-            ws.onclose = () => console.log('Binance WS cerrado');
-        }
+  // Método 2 (respaldo): estructura antigua con celda "Last NAV".
+  const tds = [...doc.querySelectorAll("td")];
+  const idx = tds.findIndex(td => /^Last NAV\s*$/i.test(td.textContent.trim()));
+  if (idx >= 0 && tds[idx+1] && tds[idx+2]) {
+    const fecha   = tds[idx+1].textContent.trim();
+    const navCell = tds[idx+2].textContent.replace(/\s+/g, " ").trim();
+    const mm = navCell.match(/([\d.,]+)\s*([A-Z]{3})\s*([-+]?[\d.,]+)\s*%/);
+    if (mm) return { isin, nombre, fecha,
+      nav: mm[1].replace(/,/g, ""),
+      var_pct: mm[3].replace(",", ".") + "%",
+      divisa: mm[2], fuente: "Fundsquare" };
+  }
+  return null;
+}
 
-        /* ---------- NOTICIAS vÃ­a RSS con TRADUCCIÃ"N AUTOMÃTICA ---------- */
-        // ÃšNICO transporte: tu propio Cloudflare Worker (CORS + caché de borde).
-        // Despliega worker-noticias.js y AJUSTA esta URL a tu subdominio real.
-        // El Worker espera el destino en el parámetro ?url= (ya lo construimos así abajo).
-        const RSS_PROXY = 'https://cartera-noticias.esperance.workers.dev/?url=';
-        
-        // Fuentes RSS especÃ­ficas por sÃ­mbolo
-        const RSS_MAP = {
-            'BRK-B': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BRK-B&region=US&lang=en-US',
-            'DE': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=DE&region=US&lang=en-US',
-            'ACM': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=ACM&region=US&lang=en-US',
-            'SPGI': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=SPGI&region=US&lang=en-US',
-            'MBGL': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=MBGL&region=US&lang=en-US',
-            'PKG': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=PKG&region=US&lang=en-US',
-            'BLK': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BLK&region=US&lang=en-US',
-            'WMT': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=WMT&region=US&lang=en-US',
-            'IWF': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=IWF&region=US&lang=en-US',
-            'solana': 'https://news.google.com/rss/search?q=Solana+crypto&hl=en-US&gl=US&ceid=US:en',
-            'UNP': 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=UNP&region=US&lang=en-US'
-        };
+/* AVL: "Aktueller Kurs (DD.MM.YYYY) ±chg EUR (±pct %) price EUR" */
+function parseAVL(html, url) {
+  const doc  = new DOMParser().parseFromString(html, "text/html");
+  const title = doc.title || "";
+  const parts = title.split("|").map(s => s.trim());
+  const ii = parts.findIndex(p => { const m = ISIN_RE.exec(p); return m && m[0] === p; });
+  const isin   = ii >= 0 ? parts[ii] : (ISIN_RE.exec(url)||[])[1] || "?";
+  const nombre = (ii > 0) ? parts[ii-1] : isin;
+  const txt    = doc.body.textContent.replace(/\s+/g, " ");
 
-        // Fuentes de cripto exclusivas para Solana
-        const SOLANA_CRYPTO_SOURCES = [
-            {
-                name: 'CoinDesk Solana',
-                url: 'https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml&category=solana'
-            },
-            {
-                name: 'CryptoSlate Solana',
-                url: 'https://cryptoslate.com/tag/solana/feed/'
-            },
-            {
-                name: 'The Block Solana',
-                url: 'https://www.theblock.co/rss/tag/solana'
-            },
-            {
-                name: 'Decrypt Solana',
-                url: 'https://decrypt.co/feed?post_type=tag&tag_name=solana'
-            }
-        ];
+  // Bloque completo (sección inferior de la página)
+  let m = txt.match(
+    /Aktueller Kurs\s*\((\d{2}\.\d{2}\.\d{4})\)\s*[-+]?[\d.]+,\d+\s*EUR\s*\(([-+]?[\d.]+,\d+)\s*%\)\s*([\d.]+,\d+)\s*EUR/
+  );
+  if (m) return { isin, nombre,
+    fecha:   m[1].replace(/\./g,"/"),
+    nav:     m[3].replace(".","").replace(",","."),
+    var_pct: m[2].replace(",",".")+"%", divisa:"EUR", fuente:"AVL" };
 
-        // Fuentes de noticias generales
-        const GENERAL_NEWS_SOURCES = {
-            'BBC Business': 'https://feeds.bbci.co.uk/news/business/rss.xml',
-            'Sky News Business': 'https://feeds.skynews.com/feeds/rss/business.xml'
-        };
+  // Plan B: precio aparece ANTES de "Aktueller Kurs" (sección superior)
+  const md = txt.match(/Aktueller Kurs\s*\((\d{2}\.\d{2}\.\d{4})\)/);
+  const mp = txt.match(/([\d.]+,\d+)\s*EUR\s*Aktueller Kurs/);
+  const mc = txt.match(/\(([-+]?\d+,\d+)\s*%\)/);
+  if (!md || !mp) return null;
+  return { isin, nombre,
+    fecha:   md[1].replace(/\./g,"/"),
+    nav:     mp[1].replace(".","").replace(",","."),
+    var_pct: mc ? mc[1].replace(",",".")+"%":"N/D", divisa:"EUR", fuente:"AVL" };
+}
 
-        // Para Solana, si la API anterior no funciona, usamos esta alternativa
-        const SOLANA_RSS = 'https://news.google.com/rss/search?q=Solana+crypto&hl=en-US&gl=US&ceid=US:en';
+/* Financial Times: pares label/value */
+function parseFT(html, url) {
+  const doc  = new DOMParser().parseFromString(html, "text/html");
+  const im   = url.match(/[?&]s=([A-Za-z0-9]+):/i);
+  const isin = im ? im[1].toUpperCase() : "?";
+  const h1   = doc.querySelector("h1");
+  const nombre = h1 ? h1.textContent.replace(/\s+/g," ").trim() : isin;
 
-        async function parseRSS(url, symbol, sourceName = '') {
-            try {
-                // Usamos el proxy CORS para evitar problemas
-                const proxyUrl = RSS_PROXY + encodeURIComponent(url);
-                const controller = new AbortController();
-                const to = setTimeout(() => controller.abort(), 8000);
-                let res;
-                try {
-                    res = await fetch(proxyUrl, { signal: controller.signal });
-                } finally {
-                    clearTimeout(to);
-                }
+  const pares = {};
+  doc.querySelectorAll("li, .mod-ui-data-list__item").forEach(el => {
+    const lab = el.querySelector(".mod-ui-data-list__label");
+    const val = el.querySelector(".mod-ui-data-list__value");
+    if (lab && val) pares[lab.textContent.trim().toLowerCase()] = val.textContent.trim();
+  });
 
-                if (!res.ok) {
-                    throw new Error(`Error HTTP: ${res.status}`);
-                }
+  const navK = Object.keys(pares).find(k => k.includes("price"));
+  const chgK = Object.keys(pares).find(k => k.includes("today's change") || k.includes("day change"));
+  const nav  = navK ? pares[navK].replace(",","") : null;
+  if (!nav) return null;
 
-                const txt = await res.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(txt, "text/xml");
+  const vm = chgK ? (pares[chgK]||"").match(/([-+]?\d+(?:[.,]\d+)?)\s*%/) : null;
+  const var_pct = vm ? vm[1]+"%":"N/D";
 
-                // Verificar si el parsing fue exitoso
-                const parseError = doc.querySelector("parsererror");
-                if (parseError) {
-                    throw new Error("Error al parsear el XML RSS");
-                }
+  const txt    = doc.body.textContent;
+  const fechaM = txt.match(/as of\s+([A-Za-z]{3}\s+\d{1,2}\s+\d{4})/i);
+  const fecha  = fechaM ? ftFecha(fechaM[1]) : "N/D";
+  return { isin, nombre, fecha, nav, var_pct, divisa:"EUR", fuente:"FT" };
+}
 
-                let items = [];
-                const itemElements = doc.querySelectorAll("item");
-                
-                if (!itemElements || itemElements.length === 0) {
-                    // Intentar con otro formato (atom)
-                    const entries = doc.querySelectorAll("entry");
-                    if (entries && entries.length > 0) {
-                        items = Array.from(entries).slice(0, 5).map(entry => ({
-                            title: entry.querySelector("title")?.textContent || "Sin tÃ­tulo",
-                            link: entry.querySelector("link")?.getAttribute("href") || 
-                                  entry.querySelector("link[href]")?.getAttribute("href") || "#",
-                            desc: entry.querySelector("content")?.textContent?.replace(/<[^>]+>/g, "").substring(0, 200) + "..." || 
-                                  entry.querySelector("summary")?.textContent?.substring(0, 200) + "..." || "Sin resumen",
-                            date: new Date(entry.querySelector("updated")?.textContent || 
-                                         entry.querySelector("published")?.textContent || Date.now()),
-                            symbol: symbol,
-                            source: sourceName
-                        }));
-                    } else {
-                        throw new Error("No se encontraron noticias en el feed");
-                    }
-                } else {
-                    // Formato RSS estÃ¡ndar
-                    items = Array.from(itemElements)
-                        .slice(0, 5)
-                        .map(it => ({
-                            title: it.querySelector("title")?.textContent || "Sin título",
-                            link: it.querySelector("link")?.textContent || "#",
-                            desc: it.querySelector("description")?.textContent?.replace(/<[^>]+>/g, "").substring(0, 200) + "..." || "Sin resumen",
-                            date: new Date(it.querySelector("pubDate")?.textContent || 
-                                         it.querySelector("dc\\:date")?.textContent || Date.now()),
-                            symbol: symbol,
-                            source: sourceName
-                        }));
-                }
+const MES = {Jan:"01",Feb:"02",Mar:"03",Apr:"04",May:"05",Jun:"06",
+             Jul:"07",Aug:"08",Sep:"09",Oct:"10",Nov:"11",Dec:"12"};
+function ftFecha(s) {
+  const m = s.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+  return m ? `${m[2].padStart(2,"0")}/${MES[m[1]]||"??"}/${m[3]}` : s;
+}
 
-                return items;
-            } catch (e) {
-                console.error("Error al obtener RSS:", e);
-                throw new Error("No se pudieron cargar las noticias");
-            }
-        }
+/* Investing.com. Nombre y código de las metaetiquetas. Precio y variación de las
+   celdas de cotización, que Investing marca con clases estables: el precio lleva
+   "pid-XXXX-last" y la variación porcentual "pid-XXXX-pcp". Si esas clases
+   cambiaran, hay respaldo por meta-description (precio) y por texto (variación). */
+function parseInvesting(html, url) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const meta = n => (doc.querySelector(`meta[property="${n}"]`) ||
+                     doc.querySelector(`meta[name="${n}"]`) || {}).content || "";
 
-        // Detecta si el texto está en inglés (para NO retraducir lo que ya está en español)
-        function isEnglish(text) {
-            if (!text || !text.trim()) return false;
+  const title = meta("og:title") || doc.title || "";
+  const codM  = title.match(/\(([A-Z0-9]{6,})\)/);
+  const isin  = codM ? codM[1] : (isinHint(url) || "?");
+  const nombre = title
+    .replace(/^Fondo\s+/i, "")
+    .replace(/\s*\([^)]*\)\s*/, " ")
+    .replace(/\s*-\s*Investing\.com.*$/i, "")
+    .replace(/\s+/g, " ").trim() || isin;
 
-            // Señales inequívocas de español -> NO traducir
-            if (/[áéíóúñ¿¡]/i.test(text)) return false;
-            const lower = ' ' + text.toLowerCase() + ' ';
-            const spanishHints = [' el ',' la ',' los ',' las ',' de ',' del ',' que ',' con ',
-                ' para ',' por ',' una ',' este ',' según ',' más ',' empresa ',' mercado ',
-                ' acción ',' acciones ',' precio ',' bolsa ',' ganancias ',' inversores '];
-            if (spanishHints.some(w => lower.includes(w))) return false;
+  // Lee la primera celda cuya clase sea pid-<n>-<sufijo> (last = precio, pcp = %).
+  const pickPid = suf => {
+    const el = doc.querySelector(`[class*="pid-"][class*="-${suf}"]`);
+    return el ? el.textContent.replace(/[()\s]/g, "") : null;
+  };
 
-            // Señales de inglés
-            const englishHints = [' the ',' and ',' for ',' with ',' this ',' that ',' from ',
-                ' which ',' company ',' market ',' stock ',' shares ',' price ',' business ',
-                ' report ',' earnings ',' crypto ',' blockchain ',' token '];
-            if (englishHints.some(w => lower.includes(w))) return true;
+  // Precio: clase pid-last; respaldo: meta-description.
+  let nav = pickPid("last");
+  if (!nav) nav = (meta("og:description").match(/[úu]ltimo precio:?\s*([\d.,]+)/i) || [])[1] || null;
+  if (!nav) return null;
+  nav = nav.replace(/\./g, "").replace(",", ".");          // español → punto decimal
 
-            // Sin señales claras: conservador -> no traducir (evita corromper español)
-            return false;
-        }
+  // Variación %: clase pid-pcp; respaldo: patrón "(±X %)" en el texto.
+  let var_pct = "N/D";
+  let pcp = pickPid("pcp");
+  if (!pcp) {
+    const txt = doc.body.textContent.replace(/\u00a0/g, " ").replace(/\s+/g, " ");
+    pcp = (txt.match(/\(\s*([-+][\d.,]+)\s*%\s*\)/) || [])[1];
+  }
+  if (pcp) {
+    const mm = pcp.match(/([-+]?[\d.,]+)/);
+    if (mm) var_pct = mm[1].replace(",", ".") + "%";
+  }
 
-        // Traduce texto real EN->ES vía MyMemory (tiene CORS). Si falla, devuelve el original.
-        async function translateText(text, targetLang = 'es') {
-            if (!text || !text.trim()) return text;
-            const controller = new AbortController();
-            const to = setTimeout(() => controller.abort(), 6000);
-            try {
-                const u = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
-                const r = await fetch(u, { signal: controller.signal });
-                const d = await r.json();
-                const out = d && d.responseData && d.responseData.translatedText;
-                // MyMemory devuelve avisos en mayúsculas cuando agota cuota o falla
-                if (out && !/MYMEMORY WARNING|QUERY LENGTH|QUOTA|INVALID/i.test(out)) return out;
-                return text;
-            } catch (e) {
-                return text; // Nunca inventamos: se conserva el titular real original
-            } finally {
-                clearTimeout(to);
-            }
-        }
+  // Fecha "22/06 - Info retrasada" (DD/MM → añadimos el año en curso).
+  let fecha = "N/D";
+  const txt2 = doc.body.textContent.replace(/\u00a0/g, " ").replace(/\s+/g, " ");
+  const fM = txt2.match(/(\d{2}\/\d{2})\s*-\s*Info/i) || txt2.match(/(\d{2}\/\d{2}\/\d{4})/);
+  if (fM) fecha = fM[1].length === 5 ? `${fM[1]}/${new Date().getFullYear()}` : fM[1];
 
-        // Escapa HTML para insertar texto de feeds de forma segura
-        function escapeHtml(s) {
-            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            }[c]));
-        }
+  return { isin, nombre, fecha, nav, var_pct, divisa: "EUR", fuente: "Investing" };
+}
 
-        // Ejecuta tareas asíncronas con concurrencia limitada (evita saturar la API de traducción)
-        async function runPool(tasks, limit = 4) {
-            const queue = tasks.slice();
-            const workers = Array.from({ length: Math.min(limit, queue.length) }, async () => {
-                while (queue.length) {
-                    const task = queue.shift();
-                    try { await task(); } catch (e) { /* se conserva el original */ }
-                }
-            });
-            await Promise.all(workers);
-        }
+function getParser(url) {
+  if (url.includes("markets.ft.com"))        return parseFT;
+  if (url.includes("fundsquare.net"))        return parseFundsquare;
+  if (url.includes("avl-investmentfonds.de"))return parseAVL;
+  if (url.includes("investing.com"))         return parseInvesting;
+  return null;
+}
 
-        // Render PROGRESIVO: pinta las noticias reales de inmediato y traduce en segundo plano.
-        // Si la traducción falla o no llega, permanece el titular real original (nunca inventado).
-        function renderNewsItems(container, items) {
-            container.innerHTML = items.map((it, i) => `
-                <article data-idx="${i}">
-                    <h3>
-                        <a href="${escapeHtml(it.link)}" target="_blank" rel="noopener" data-role="title">${escapeHtml(it.title)}</a>
-                        ${it.source ? `<span class="news-source">${escapeHtml(it.source)}</span>` : ''}
-                    </h3>
-                    <p data-role="desc">${escapeHtml(it.desc)}</p>
-                    <small><i class="fas fa-clock"></i> ${it.date.toLocaleString('es-ES')}</small>
-                </article>
-            `).join('');
+// ── FORMATO ────────────────────────────────────────────────────────────────────
+function fmtNav(nav, div) {
+  const n = parseFloat(nav);
+  if (isNaN(n)) return nav;
+  return n.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:4})
+    + " " + (div||"EUR");
+}
+function fmtPct(pct) {
+  if (!pct || pct==="N/D")
+    return '<span class="pill neu">—</span>';
+  const m = pct.match(/([-+]?)([\d.]+)%/);
+  if (!m) return `<span class="pill neu">${esc(pct)}</span>`;
+  const n = parseFloat(m[1]+m[2]);
+  const cls = n>0?"pos":n<0?"neg":"neu";
+  const lbl = (n>0?"+":"") +
+    n.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})+" %";
+  return `<span class="pill ${cls}">${lbl}</span>`;
+}
 
-            const tasks = items.map((it, i) => async () => {
-                if (!(isEnglish(it.title) || isEnglish(it.desc))) return;
-                const [t, d] = await Promise.all([
-                    translateText(it.title),
-                    translateText(it.desc)
-                ]);
-                const art = container.querySelector(`article[data-idx="${i}"]`);
-                if (!art) return;
-                const a = art.querySelector('[data-role="title"]');
-                if (a && t) a.textContent = t;
-                const p = art.querySelector('[data-role="desc"]');
-                if (p && d) p.textContent = d;
-            });
+// ── UTILIDADES ─────────────────────────────────────────────────────────────────
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
-            // No await: el usuario ya ve las noticias; la traducción se aplica al vuelo.
-            runPool(tasks, 4);
-        }
+function isinHint(url) {
+  const m1 = url.match(/[?&]s=([A-Za-z0-9]+):/i); if (m1) return m1[1].toUpperCase();
+  const m2 = url.match(/idInstr=(\d+)/);           if (m2) return "id:"+m2[1];
+  const m3 = url.match(/details\/([A-Za-z0-9]+)/); if (m3) return m3[1].toUpperCase();
+  return "—";
+}
+function fuenteLabel(url) {
+  if (url.includes("markets.ft.com"))         return "FT";
+  if (url.includes("fundsquare.net"))         return "Fundsquare";
+  if (url.includes("avl-investmentfonds.de")) return "AVL";
+  if (url.includes("investing.com"))          return "Investing";
+  return "—";
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-        window.toggleNews = async function (symbol) {
-            const container = document.getElementById(`news-${symbol}`);
-            const btn = container.previousElementSibling;
+// ── RENDER ─────────────────────────────────────────────────────────────────────
+function renderRows() {
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  FONDOS.forEach((f, i) => {
+    const tr = document.createElement("tr");
+    tr.id = "row-"+i;
 
-            if (container.classList.toggle('open')) {
-                btn.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar noticias';
-                btn.classList.add('open');
+    if (f.separador) {
+      tr.className = "row-sep";
+      tr.innerHTML = `<td colspan="6">${esc(f.titulo)}</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
 
-                // Si ya hay contenido, no recargar
-                if (container.querySelector('article') || container.querySelector('.error')) {
-                    return;
-                }
+    if (f.bloqueado) {
+      tr.className = "row-block";
+      tr.innerHTML = `
+        <td class="c-name" data-label="Fondo">${esc(f.nombre||"—")}<small>${esc(f.nota||"")}</small></td>
+        <td class="c-isin" data-label="ISIN">—</td>
+        <td class="c-fecha" data-label="Fecha NAV">—</td>
+        <td class="c-nav" data-label="NAV">—</td>
+        <td class="c-pct" data-label="Var. %">—</td>
+        <td data-label="Fuente"><span class="badge">Bloomberg</span></td>`;
+    } else {
+      const hint = isinHint(f.url);
+      const fLabel = fuenteLabel(f.url);
+      tr.className = "clickable";
+      tr.title = f.url;
+      tr.onclick = () => window.open(f.url, "_blank");
+      tr.innerHTML = `
+        <td class="c-name" data-label="Fondo"><span class="sh">${esc(hint)}</span></td>
+        <td class="c-isin" data-label="ISIN"><span class="sh">—</span></td>
+        <td class="c-fecha" data-label="Fecha NAV"><span class="sh">—</span></td>
+        <td class="c-nav" data-label="NAV"><span class="sh">—</span></td>
+        <td class="c-pct" data-label="Var. %"><span class="pill neu sh">—</span></td>
+        <td data-label="Fuente"><span class="badge">${fLabel}</span></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+}
 
-                container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando y traduciendo noticias…</div>';
+function rowOK(i, r) {
+  const tr = document.getElementById("row-"+i);
+  if (!tr) return;
+  tr.className = "row-ok clickable";
+  tr.title = FONDOS[i].url;
+  tr.onclick = () => window.open(FONDOS[i].url, "_blank");
+  tr.innerHTML = `
+    <td class="c-name" data-label="Fondo">${esc(r.nombre)}</td>
+    <td class="c-isin" data-label="ISIN">${esc(r.isin)}</td>
+    <td class="c-fecha" data-label="Fecha NAV">${esc(r.fecha)}</td>
+    <td class="c-nav" data-label="NAV">${esc(fmtNav(r.nav, r.divisa))}</td>
+    <td class="c-pct" data-label="Var. %">${fmtPct(r.var_pct)}</td>
+    <td data-label="Fuente"><span class="badge">${esc(r.fuente)}</span></td>`;
+}
 
-                try {
-                    let allItems = [];
-                    
-                    // Si es Solana, cargamos las fuentes exclusivas de cripto primero
-                    if (symbol === 'solana') {
-                        // Cargar fuentes de cripto exclusivas para Solana
-                        const cryptoNewsPromises = SOLANA_CRYPTO_SOURCES.map(source => 
-                            parseRSS(source.url, symbol, source.name).catch(err => {
-                                console.log(`No se pudieron cargar noticias de ${source.name}:`, err);
-                                return [];
-                            })
-                        );
-                        
-                        const cryptoNewsResults = await Promise.all(cryptoNewsPromises);
-                        
-                        // Combinar todas las noticias de cripto
-                        cryptoNewsResults.forEach(newsList => {
-                            if (Array.isArray(newsList) && newsList.length > 0) {
-                                allItems = allItems.concat(newsList);
-                            }
-                        });
-                        
-                        // También cargar la fuente general de Solana
-                        try {
-                            const generalSolanaNews = await parseRSS(SOLANA_RSS, symbol, 'Google News');
-                            allItems = allItems.concat(generalSolanaNews);
-                        } catch (err) {
-                            console.log('No se pudieron cargar noticias generales de Solana:', err);
-                        }
-                    } else {
-                        // Para acciones normales, usar las fuentes existentes
-                        let feedUrl = RSS_MAP[symbol];
-                        if (!feedUrl) {
-                            throw new Error('No hay fuente de noticias configurada para este símbolo');
-                        }
+function rowErr(i, msg) {
+  const tr = document.getElementById("row-"+i);
+  if (!tr) return;
+  const hint = isinHint(FONDOS[i].url);
+  tr.className = "row-err";
+  tr.title = FONDOS[i].url;
+  tr.onclick = () => window.open(FONDOS[i].url, "_blank");
+  tr.innerHTML = `
+    <td class="c-name" data-label="Fondo" style="color:var(--muted)">${esc(hint)}</td>
+    <td class="c-isin" data-label="ISIN">—</td>
+    <td class="c-fecha" data-label="Fecha NAV">—</td>
+    <td class="c-nav" data-label="NAV">—</td>
+    <td class="c-pct" data-label="Var. %">—</td>
+    <td data-label="Fuente"><span class="badge">${fuenteLabel(FONDOS[i].url)}</span>
+        <span class="c-err"> ${esc(msg)}</span></td>`;
+}
 
-                        let items = await parseRSS(feedUrl, symbol, 'Yahoo Finance');
-                        allItems = allItems.concat(items);
-                    }
+// ── PROGRESO ───────────────────────────────────────────────────────────────────
+let total = 0, done = 0;
+function setProgress(d, t) {
+  document.getElementById("progress").textContent = d+"/"+t+" fondos";
+}
+function setBusy(b) {
+  document.getElementById("btnRef").disabled = b;
+  document.getElementById("ico").className = "spin" + (b?" go":"");
+}
 
-                    // Añadir noticias de BBC y Sky News relacionadas con el símbolo
-                    const generalNewsPromises = [];
-                    
-                    // Buscar en BBC News
-                    const bbcSearchUrl = `https://feeds.bbci.co.uk/news/business/rss.xml?search=${encodeURIComponent(symbol)}`;
-                    generalNewsPromises.push(
-                        parseRSS(bbcSearchUrl, symbol, 'BBC Business').catch(err => {
-                            console.log(`No se encontraron noticias de BBC para ${symbol}:`, err);
-                            return [];
-                        })
-                    );
-                    
-                    // Buscar en Sky News
-                    const skySearchUrl = `https://feeds.skynews.com/feeds/rss/business.xml`;
-                    // Sky News no tiene parámetro de búsqueda, así que obtenemos las noticias generales
-                    generalNewsPromises.push(
-                        parseRSS(skySearchUrl, symbol, 'Sky News Business').catch(err => {
-                            console.log(`No se encontraron noticias de Sky News para ${symbol}:`, err);
-                            return [];
-                        })
-                    );
-                    
-                    // Obtener noticias generales
-                    const generalNewsResults = await Promise.all(generalNewsPromises);
-                    
-                    // Combinar todas las noticias
-                    for (let newsList of generalNewsResults) {
-                        if (Array.isArray(newsList) && newsList.length > 0) {
-                            // --- INICIO DE LA CORRECCIÓN ---
-                            // Creamos una expresión regular para buscar el símbolo como una palabra completa, ignorando mayúsculas y minúsculas.
-                            // El \b significa "límite de palabra".
-                            const symbolRegex = new RegExp(`\\b${symbol}\\b`, 'i');
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+async function iniciar() {
+  setBusy(true);
+  done = 0;
+  total = FONDOS.filter(f => !f.bloqueado && !f.separador).length;
+  setProgress(0, total);
+  document.getElementById("last-update").textContent = "Cargando…";
+  document.getElementById("notes").innerHTML = "";
+  renderRows();
 
-                            const filteredNews = newsList.filter(item => 
-                                symbolRegex.test(item.title) || symbolRegex.test(item.desc)
-                            );
-                            // --- FIN DE LA CORRECCIÓN ---
-                            
-                            allItems = allItems.concat(filteredNews);
-                        }
-                    }
-                    
-                    // Eliminar duplicados (por título)
-                    const uniqueItems = [];
-                    const titles = new Set();
-                    
-                    for (let item of allItems) {
-                        if (!titles.has(item.title)) {
-                            titles.add(item.title);
-                            uniqueItems.push(item);
-                        }
-                    }
-                    
-                    // Ordenar por fecha (las más recientes primero)
-                    uniqueItems.sort((a, b) => b.date - a.date);
-                    
-                    // Limitar a 8 noticias en total
-                    allItems = uniqueItems.slice(0, 8);
+  // Consultas en paralelo PERO con freno: 3 workers, arranque escalonado y un
+  // pequeño retardo con jitter entre peticiones. Los proxies gratuitos tumban
+  // las ráfagas (429/“rate limit”); espaciarlas un poco evita justamente el
+  // patrón “unos cargan y otros no”. Cada fondo además rota el proxy inicial.
+  const pend = FONDOS.map((f, i) => ({ f, i })).filter(x => !x.f.bloqueado && !x.f.separador);
+  let cursor = 0;
+  async function worker(wid) {
+    await sleep(wid * 250);                               // arranque escalonado
+    while (cursor < pend.length) {
+      const { f, i } = pend[cursor++];
+      await sleep(150 + Math.random() * 250);             // throttle + jitter
+      try {
+        // Con proxy propio: empezar siempre por él (índice 0). Sin él: rotar.
+        const start  = HAY_PROPIO ? 0 : (i % PROXIES.length);
+        const html   = await fetchHTML(f.url, start);
+        const parser = getParser(f.url);
+        const result = parser ? parser(html, f.url) : null;
+        result ? rowOK(i, result)
+               : rowErr(i, "Sin datos — ¿anti-bot o estructura cambiada?");
+      } catch(e) {
+        rowErr(i, e.message === "BLOQUEO"
+          ? "Proxies saturados/anti-bot — reintenta · " + (e.detalle || "")
+          : e.message);
+      }
+      done++;
+      setProgress(done, total);
+    }
+  }
+  await Promise.all(Array.from({ length: 3 }, (_, w) => worker(w)));
 
-                    if (!allItems.length) {
-                        container.innerHTML = '<div class="no-news"><i class="fas fa-newspaper"></i> No hay noticias disponibles</div>';
-                        return;
-                    }
+  document.getElementById("last-update").textContent =
+    "Última actualización: " + new Date().toLocaleString("es-ES");
+  setBusy(false);
 
-                    // Render inmediato de noticias REALES + traducción progresiva en segundo plano
-                    renderNewsItems(container, allItems);
-                    
-                } catch (e) {
-                    console.error(`Error cargando noticias para ${symbol}:`, e);
-                    container.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> ${e.message || 'Error al cargar noticias'}</div>`;
-                }
-            } else {
-                btn.innerHTML = '<i class="fas fa-chevron-down"></i> Ver noticias';
-                btn.classList.remove('open');
-            }
-        };
-        
-        // Función para cargar y mostrar noticias generales de BBC y Sky News
-        window.toggleGeneralNews = async function () {
-            const container = document.getElementById('general-news-container');
-            const btn = document.querySelector('.general-news-toggle');
+  const aviso = HAY_PROPIO
+    ? `<span>✅ <b>Proxy propio activo.</b> Funciona desde cualquier host (Codeberg incluido) y sin rate-limits de terceros.</span>`
+    : `<span>🛠️ <b>Sin proxy propio.</b> Los proxies públicos gratuitos están casi todos caídos (codetabs 400; allorigins y x2u sin CORS). Hoy solo corsproxy.io funciona, y <b>solo desde github.io</b>. Para que esto vaya fiable —y para que funcione en Codeberg— despliega tu Worker y pega su URL en <code>PROXY_PROPIO</code>.</span>`;
+  document.getElementById("notes").innerHTML = aviso + `
+    <span>⚠ <b>Financial Times:</b> anti-bot agresivo. Un proxy propio con User-Agent de navegador suele saltárselo; si Cloudflare te lo bloquea, prueba Deno Deploy.</span>
+    <span>🔎 <b>Fundsquare:</b> lee las fichas /security/summary y /security/price, en día hábil o festivo (toma "Previous NAV" si el mercado está cerrado).</span>
+    <span>📈 <b>Investing.com (azValor Global Value PP):</b> sustituye al antiguo Bloomberg. Lee precio, variación y fecha del bloque de cotización.</span>
+    <span>💡 Haz clic en cualquier fila para abrir la página original del fondo.</span>`;
+}
 
-            if (container.classList.toggle('open')) {
-                btn.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar noticias internacionales';
-                btn.classList.add('open');
-
-                // Si ya hay contenido, no recargar
-                if (container.querySelector('article') || container.querySelector('.error')) {
-                    return;
-                }
-
-                container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando noticias internacionales y traduciendo al español…</div>';
-
-                try {
-                    // Obtener noticias de BBC y Sky News
-                    const newsPromises = [];
-                    
-                    // BBC Business
-                    newsPromises.push(
-                        parseRSS(GENERAL_NEWS_SOURCES['BBC Business'], 'general', 'BBC Business')
-                        .catch(err => {
-                            console.log('Error cargando BBC Business:', err);
-                            return [];
-                        })
-                    );
-                    
-                    // Sky News Business
-                    newsPromises.push(
-                        parseRSS(GENERAL_NEWS_SOURCES['Sky News Business'], 'general', 'Sky News Business')
-                        .catch(err => {
-                            console.log('Error cargando Sky News Business:', err);
-                            return [];
-                        })
-                    );
-                    
-                    const results = await Promise.all(newsPromises);
-                    
-                    // Combinar todas las noticias
-                    let allNews = [];
-                    results.forEach(newsList => {
-                        if (Array.isArray(newsList)) {
-                            allNews = allNews.concat(newsList);
-                        }
-                    });
-                    
-                    // Ordenar por fecha (las más recientes primero)
-                    allNews.sort((a, b) => b.date - a.date);
-                    
-                    // Limitar a 15 noticias
-                    allNews = allNews.slice(0, 15);
-                    
-                    if (!allNews.length) {
-                        container.innerHTML = '<div class="no-news"><i class="fas fa-newspaper"></i> No hay noticias internacionales disponibles en este momento</div>';
-                        return;
-                    }
-
-                    // Render inmediato de noticias REALES + traducción progresiva en segundo plano
-                    renderNewsItems(container, allNews);
-                    
-                } catch (e) {
-                    console.error('Error cargando noticias generales:', e);
-                    container.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> Error al cargar noticias internacionales: ${e.message}</div>`;
-                }
-            } else {
-                btn.innerHTML = '<i class="fas fa-chevron-down"></i> Ver noticias internacionales';
-                btn.classList.remove('open');
-            }
-        };
-    </script>
+// Auto-cargar al abrir
+window.addEventListener("load", iniciar);
+</script>
 </body>
 </html>
