@@ -107,6 +107,28 @@
         .change { font-size: 1.2em; }
         .change.positive { color: var(--positive-color); }
         .change.negative { color: var(--negative-color); }
+
+        /* Horario extendido: postmercado (luna) y premercado (sol) */
+        .ext-hours {
+            display: flex;
+            gap: 20px;
+            margin: 6px 0 12px;
+            font-size: 0.95em;
+            flex-wrap: wrap;
+        }
+        .ext-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .ext-item > i { width: 1.1em; text-align: center; font-size: 1.05em; }
+        .ext-item .fa-moon { color: #aeb8ff; }
+        .ext-item .fa-sun  { color: #f5c451; }
+        .ext-val { color: var(--secondary-text); font-weight: 500; }
+        .ext-val.positive { color: var(--positive-color); }
+        .ext-val.negative { color: var(--negative-color); }
+        .ext-val.na { color: var(--secondary-text); opacity: 0.55; }
+        .ext-pct { font-size: 0.85em; opacity: 0.85; margin-left: 2px; }
         .refresh-btn {
             display: block;
             margin: 30px auto;
@@ -437,6 +459,13 @@
             loadPrices();
             setupStockRealtimeUpdates();
             setupCryptoRealtimeUpdates();
+            // Refresco de precios pre/post cada 60 s (los valores extendidos se mueven).
+            setInterval(loadExtendedAll, 60000);
+            // Reevaluación barata de la fase cada 20 s: hace aparecer/desaparecer luna y sol
+            // en los cambios de sesión (16:00, 04:00, 09:30 ET) sin esperar a la red.
+            setInterval(() => {
+                tickers.filter(t => t.type === 'stock').forEach(t => renderExtended(t.symbol));
+            }, 20000);
         });
 
         function renderGrid() {
@@ -452,6 +481,17 @@
                     </div>
                     <div class="price" id="price-${t.symbol}">Cargando...</div>
                     <div class="change" id="change-${t.symbol}"></div>
+                    ${t.type === 'stock' ? `
+                    <div class="ext-hours" id="ext-${t.symbol}">
+                        <span class="ext-item" title="Fuera de hora / postmercado">
+                            <i class="fas fa-moon"></i>
+                            <span class="ext-val na" id="post-${t.symbol}">—</span>
+                        </span>
+                        <span class="ext-item" title="Premercado">
+                            <i class="fas fa-sun"></i>
+                            <span class="ext-val na" id="pre-${t.symbol}">—</span>
+                        </span>
+                    </div>` : ''}
                     <button class="news-toggle-btn" onclick="toggleNews('${t.symbol}')">
                         <i class="fas fa-chevron-down"></i> Ver noticias
                     </button>
@@ -465,6 +505,7 @@
                 t.type === 'stock' ? fetchStockPrice(t.symbol) : fetchCryptoPrice(t.symbol, t.market)
             ));
             updateSummary();
+            loadExtendedAll();
             document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
         }
 
@@ -537,6 +578,104 @@
             dayEl.textContent = `${td >= 0 ? '+' : ''}$${td.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
             dayEl.className = `summary-value ${td >= 0 ? 'summary-positive' : 'summary-negative'}`;
             document.getElementById('positive-changes').textContent = `${pm}/${tickers.length}`;
+        }
+
+        /* ---------- HORARIO EXTENDIDO (postmercado / premercado) ---------- */
+        // Fuente: endpoint chart de Yahoo con includePrePost=true, vía tu Worker CORS (?url=).
+        // La fase (qué se muestra) se calcula en America/New_York; el valor solo aparece
+        // si la fase lo permite Y hay dato fresco.
+        const extData = {}; // symbol -> { prePrice, postPrice, refClose }
+
+        // Devuelve la fase del mercado USA: 'PRE' | 'REGULAR' | 'POST' | 'WEEKEND'.
+        function getMarketPhase(date = new Date()) {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/New_York',
+                weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false
+            }).formatToParts(date);
+            const m = {};
+            parts.forEach(p => { m[p.type] = p.value; });
+            let hh = parseInt(m.hour, 10);
+            if (hh === 24) hh = 0; // algunos entornos devuelven '24' a medianoche
+            const t = hh * 60 + parseInt(m.minute, 10); // minutos desde medianoche ET
+
+            if (m.weekday === 'Sat' || m.weekday === 'Sun') return 'WEEKEND';
+            if (t >= 240 && t < 570) return 'PRE';       // 04:00–09:30
+            if (t >= 570 && t < 960) return 'REGULAR';   // 09:30–16:00
+            return 'POST';                                // 16:00–24:00 y 00:00–04:00
+        }
+
+        async function fetchExtendedHours(symbol) {
+            const yfUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d&includePrePost=true`;
+            const proxyUrl = RSS_PROXY + encodeURIComponent(yfUrl);
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const json = await res.json();
+            const r = json?.chart?.result?.[0];
+            if (!r) throw new Error('respuesta sin datos');
+
+            const meta = r.meta || {};
+            const ts = r.timestamp || [];
+            const closes = r.indicators?.quote?.[0]?.close || [];
+            const cp = meta.currentTradingPeriod || {};
+            const regStart = cp.regular?.start;
+            const regEnd = cp.regular?.end;
+            const refClose = meta.regularMarketPrice ?? meta.chartPreviousClose ?? meta.previousClose ?? null;
+
+            let prePrice = null, postPrice = null;
+            for (let i = 0; i < ts.length; i++) {
+                const c = closes[i];
+                if (c == null) continue;
+                if (regStart != null && ts[i] < regStart) prePrice = c;        // último tick pre
+                else if (regEnd != null && ts[i] >= regEnd) postPrice = c;     // último tick post
+            }
+            extData[symbol] = { prePrice, postPrice, refClose };
+        }
+
+        function setExtVal(el, price, ref) {
+            const chg = price - ref;
+            const pct = ref ? (chg / ref) * 100 : 0;
+            const sign = chg >= 0 ? '+' : '';
+            el.className = 'ext-val ' + (chg >= 0 ? 'positive' : 'negative');
+            el.innerHTML = `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` +
+                           ` <span class="ext-pct">${sign}${pct.toFixed(2)}%</span>`;
+        }
+        function setExtNA(el) {
+            el.className = 'ext-val na';
+            el.textContent = '—';
+        }
+
+        // Aplica la máquina de estados a un símbolo (sin red; barato, se puede llamar a menudo).
+        function renderExtended(symbol) {
+            const postEl = document.getElementById(`post-${symbol}`);
+            const preEl = document.getElementById(`pre-${symbol}`);
+            if (!postEl || !preEl) return;
+
+            const phase = getMarketPhase();
+            const d = extData[symbol] || {};
+
+            // 🌙 Luna: postmercado. Visible de 16:00 a 04:00 ET (fase POST).
+            if (phase === 'POST' && d.postPrice != null && d.refClose) {
+                setExtVal(postEl, d.postPrice, d.refClose);
+            } else {
+                setExtNA(postEl);
+            }
+            // ☀️ Sol: premercado. Visible solo de 04:00 a 09:30 ET (fase PRE).
+            if (phase === 'PRE' && d.prePrice != null && d.refClose) {
+                setExtVal(preEl, d.prePrice, d.refClose);
+            } else {
+                setExtNA(preEl);
+            }
+        }
+
+        // Descarga datos extendidos de todas las acciones y re-renderiza.
+        async function loadExtendedAll() {
+            const stocks = tickers.filter(t => t.type === 'stock');
+            await Promise.all(stocks.map(t =>
+                fetchExtendedHours(t.symbol).catch(err => {
+                    console.log(`Horario extendido no disponible para ${t.symbol}:`, err.message);
+                })
+            ));
+            stocks.forEach(t => renderExtended(t.symbol));
         }
 
         /* ---------- WEBSOCKETS ---------- */
